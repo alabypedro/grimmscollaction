@@ -26,7 +26,7 @@ export const Route = createFileRoute('/admin')({
 });
 
 function AdminPage() {
-  const { products, addProduct, updateProduct, deleteProduct, categories, addCategory } = useAdminStore();
+  const { products, addProduct, updateProduct, deleteProduct, categories, addCategory, deleteCategory } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -168,6 +168,7 @@ function AdminPage() {
           product={editingProduct}
           categories={categories}
           onAddCategory={addCategory}
+          onDeleteCategory={deleteCategory}
           onSave={(data) => {
             if (editingProduct) {
               updateProduct(data);
@@ -196,10 +197,11 @@ interface ProductFormModalProps {
   product: Product | null;
   categories: string[];
   onAddCategory: (category: string) => void;
+  onDeleteCategory: (category: string) => void;
   onSave: (data: Product) => void;
 }
 
-function ProductFormModal({ onClose, product, onSave, categories, onAddCategory }: ProductFormModalProps) {
+function ProductFormModal({ onClose, product, onSave, categories, onAddCategory, onDeleteCategory }: ProductFormModalProps) {
   const [formData, setFormData] = useState<Partial<Product>>(
     product || {
       name: '',
@@ -319,32 +321,58 @@ function ProductFormModal({ onClose, product, onSave, categories, onAddCategory 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <Label className="text-zinc-400">Categoria *</Label>
-                  <div className="flex gap-2">
-                    <select 
-                      className="flex-1 h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                      value={formData.category}
-                      onChange={e => setFormData({...formData, category: e.target.value as Category})}
-                    >
-                      {categories.map(cat => (
-                        <option key={cat} value={cat} className="bg-[#0F0F0F]">{cat}</option>
-                      ))}
-                    </select>
-                    <Input 
-                      placeholder="Criar nova..."
-                      className="w-32 bg-black/60 border-white/10 text-sm"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const val = e.currentTarget.value.trim();
-                          if (val) {
-                            onAddCategory(val);
-                            setFormData({...formData, category: val as Category});
-                            e.currentTarget.value = '';
-                            toast.success(`Categoria "${val}" adicionada!`);
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <select 
+                        className="flex-1 h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                        value={formData.category}
+                        onChange={e => setFormData({...formData, category: e.target.value as Category})}
+                      >
+                        {categories.map(cat => (
+                          <option key={cat} value={cat} className="bg-[#0F0F0F]">{cat}</option>
+                        ))}
+                      </select>
+                      <Input 
+                        placeholder="Criar nova..."
+                        className="w-32 bg-black/60 border-white/10 text-sm"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const val = e.currentTarget.value.trim();
+                            if (val) {
+                              onAddCategory(val);
+                              setFormData({...formData, category: val as Category});
+                              e.currentTarget.value = '';
+                              toast.success(`Categoria "${val}" adicionada!`);
+                            }
                           }
-                        }
-                      }}
-                    />
+                        }}
+                      />
+                    </div>
+                    
+                    {/* Lista de categorias para exclusão */}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {categories.map(cat => (
+                        <div key={cat} className="group flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5 text-[10px] text-zinc-400">
+                          {cat}
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              if (confirm(`Excluir categoria "${cat}"?`)) {
+                                onDeleteCategory(cat);
+                                if (formData.category === cat) {
+                                  setFormData({...formData, category: categories.find(c => c !== cat) as Category || ''});
+                                }
+                                toast.success('Categoria excluída');
+                              }
+                            }}
+                            className="text-zinc-600 hover:text-red-500 transition-colors"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               <div className="space-y-2">
@@ -469,34 +497,43 @@ function ProductFormModal({ onClose, product, onSave, categories, onAddCategory 
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-              {(formData.specs || []).map((spec, idx) => (
-                <div key={idx} className="flex items-center gap-2 p-3 bg-black/40 border border-white/5 rounded-lg group">
-                  <div className="flex-1 grid grid-cols-2 gap-2">
-                    <Input 
-                      className="h-8 bg-transparent border-none text-xs text-zinc-500 p-0 focus-visible:ring-0" 
-                      value={spec.label} 
-                      onChange={(e) => {
-                        const newSpecs = [...(formData.specs || [])];
-                        newSpecs[idx].label = e.target.value;
-                        setFormData({...formData, specs: newSpecs});
-                      }}
-                    />
-                    <Input 
-                      className="h-8 bg-transparent border-none text-xs text-white p-0 focus-visible:ring-0 font-medium" 
-                      value={spec.value} 
-                      placeholder="Definir valor..."
-                      onChange={(e) => {
-                        const newSpecs = [...(formData.specs || [])];
-                        newSpecs[idx].value = e.target.value;
-                        setFormData({...formData, specs: newSpecs});
-                      }}
-                    />
+              {(formData.specs || []).map((spec, idx) => {
+                const isShortcutSpec = ['Tamanho', 'Material', 'Peso'].includes(spec.label);
+                return (
+                  <div key={idx} className="flex items-center gap-2 p-3 bg-black/40 border border-white/5 rounded-lg group">
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      {isShortcutSpec ? (
+                        <div className="h-8 flex items-center text-xs text-zinc-500 font-medium select-none px-0">
+                          {spec.label}
+                        </div>
+                      ) : (
+                        <Input 
+                          className="h-8 bg-transparent border-none text-xs text-zinc-500 p-0 focus-visible:ring-0" 
+                          value={spec.label} 
+                          onChange={(e) => {
+                            const newSpecs = [...(formData.specs || [])];
+                            newSpecs[idx].label = e.target.value;
+                            setFormData({...formData, specs: newSpecs});
+                          }}
+                        />
+                      )}
+                      <Input 
+                        className="h-8 bg-transparent border-none text-xs text-white p-0 focus-visible:ring-0 font-medium placeholder:text-zinc-600/50" 
+                        value={spec.value === ' ' ? '' : spec.value} 
+                        placeholder={isShortcutSpec ? spec.label : "Definir valor..."}
+                        onChange={(e) => {
+                          const newSpecs = [...(formData.specs || [])];
+                          newSpecs[idx].value = e.target.value;
+                          setFormData({...formData, specs: newSpecs});
+                        }}
+                      />
+                    </div>
+                    <button type="button" onClick={() => removeSpec(idx)} className="p-1 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button type="button" onClick={() => removeSpec(idx)} className="p-1 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
 

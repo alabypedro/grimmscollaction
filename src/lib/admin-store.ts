@@ -9,6 +9,7 @@ interface AdminStore {
   updateProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
   addCategory: (category: string) => void;
+  deleteCategory: (category: string) => void;
 }
 
 export const useAdminStore = create<AdminStore>()(
@@ -34,6 +35,10 @@ export const useAdminStore = create<AdminStore>()(
           categories: state.categories.includes(category) 
             ? state.categories 
             : [...state.categories, category] 
+        })),
+      deleteCategory: (category: string) =>
+        set((state) => ({
+          categories: state.categories.filter((c) => c !== category)
         })),
     }),
     {
