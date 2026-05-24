@@ -309,18 +309,36 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-zinc-400">Categoria *</Label>
-                <select 
-                  className="w-full h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                  value={formData.category}
-                  onChange={e => setFormData({...formData, category: e.target.value as Category})}
-                >
-                  {CATEGORIES.map(cat => (
-                    <option key={cat} value={cat} className="bg-[#0F0F0F]">{cat}</option>
-                  ))}
-                </select>
-              </div>
+                <div className="space-y-2">
+                  <Label className="text-zinc-400">Categoria *</Label>
+                  <div className="flex gap-2">
+                    <select 
+                      className="flex-1 h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                      value={formData.category}
+                      onChange={e => setFormData({...formData, category: e.target.value as Category})}
+                    >
+                      {CATEGORIES.map(cat => (
+                        <option key={cat} value={cat} className="bg-[#0F0F0F]">{cat}</option>
+                      ))}
+                    </select>
+                    <Input 
+                      placeholder="Nova Categoria..."
+                      className="w-32 bg-black/60 border-white/10 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const val = e.currentTarget.value;
+                          if (val && !CATEGORIES.includes(val as any)) {
+                            // Note: To persist this long-term, you'd need a backend or a shared store.
+                            // For now, we update the local form data.
+                            setFormData({...formData, category: val as Category});
+                            e.currentTarget.value = '';
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
               <div className="space-y-2">
                 <Label className="text-zinc-400">Material *</Label>
                 <select 
