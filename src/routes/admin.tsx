@@ -446,7 +446,7 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
                   className="bg-black/60 border-white/10 h-9 text-sm"
                 />
               </div>
-              <Button type="button" onClick={addSpec} className="bg-white/5 hover:bg-white/10 text-white h-9 border border-white/10">
+              <Button type="button" onClick={() => addSpec()} className="bg-white/5 hover:bg-white/10 text-white h-9 border border-white/10">
                 Adicionar Spec
               </Button>
             </div>
