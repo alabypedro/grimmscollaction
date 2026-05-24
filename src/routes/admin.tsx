@@ -165,7 +165,9 @@ function AdminPage() {
         <ProductFormModal 
           isOpen={isFormOpen} 
           onClose={() => setIsFormOpen(false)} 
-          product={editingProduct} 
+          product={editingProduct}
+          categories={categories}
+          onAddCategory={addCategory}
           onSave={(data) => {
             if (editingProduct) {
               updateProduct(data);
