@@ -26,7 +26,7 @@ export const Route = createFileRoute('/admin')({
 });
 
 function AdminPage() {
-  const { products, addProduct, updateProduct, deleteProduct } = useAdminStore();
+  const { products, addProduct, updateProduct, deleteProduct, categories, addCategory } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
