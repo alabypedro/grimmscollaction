@@ -1,4 +1,10 @@
+import { createFileRoute } from '@tanstack/react-router';
 import React, { useState } from 'react';
+
+export const Route = createFileRoute('/admin')({
+  component: AdminPage,
+});
+
 import { useAdminStore } from '@/lib/admin-store';
 import { Product, Category, CATEGORIES, MATERIALS, Material } from '@/lib/products';
 import { Button } from '@/components/ui/button';
