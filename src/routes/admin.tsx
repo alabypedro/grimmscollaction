@@ -370,16 +370,36 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
             <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
               <Layout className="w-4 h-4" /> Mídia e Conteúdo
             </h3>
-            <div className="space-y-2">
-              <Label htmlFor="image" className="text-zinc-400">URL da Imagem Principal *</Label>
-              <div className="flex gap-4">
-                <Input 
-                  id="image"
-                  className="bg-black/60 border-white/10 focus:border-purple-500/50 flex-1"
-                  value={formData.image}
-                  onChange={e => setFormData({...formData, image: e.target.value})}
-                  placeholder="https://..."
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="image" className="text-zinc-400">URL da Imagem ou Upload Local *</Label>
+                  <div className="flex gap-4">
+                    <Input 
+                      id="image"
+                      className="bg-black/60 border-white/10 focus:border-purple-500/50 flex-1"
+                      value={formData.image}
+                      onChange={e => setFormData({...formData, image: e.target.value})}
+                      placeholder="https://..."
+                    />
+                    <div className="relative">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setFormData({...formData, image: reader.result as string});
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <Button type="button" variant="outline" className="border-white/10 text-xs">
+                        Upload
+                      </Button>
+                    </div>
                 {formData.image && (
                   <div className="w-10 h-10 rounded-md border border-white/10 overflow-hidden bg-black flex-shrink-0">
                     <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
