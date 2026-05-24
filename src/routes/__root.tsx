@@ -9,6 +9,10 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
+import { CartDrawer } from "@/components/CartDrawer";
+import { CartProvider } from "@/lib/cart";
 
 function NotFoundComponent() {
   return (
@@ -72,20 +76,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Grimm's Collection — Impressão 3D Premium" },
+      { name: "description", content: "Loja premium de produtos impressos em 3D: miniaturas, cosplay, decoração e peças funcionais. Drops exclusivos e edições limitadas." },
+      { name: "author", content: "Grimm's Collection" },
+      { property: "og:title", content: "Grimm's Collection — Impressão 3D Premium" },
+      { property: "og:description", content: "Loja premium de produtos impressos em 3D de alta qualidade." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" },
     ],
   }),
   shellComponent: RootShell,
@@ -113,7 +119,16 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <CartProvider>
+        <div className="min-h-screen flex flex-col">
+          <Header />
+          <main className="flex-1">
+            <Outlet />
+          </main>
+          <Footer />
+          <CartDrawer />
+        </div>
+      </CartProvider>
     </QueryClientProvider>
   );
 }
