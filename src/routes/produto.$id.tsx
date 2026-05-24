@@ -1,27 +1,15 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, Star, Plus, Minus, Shield, Truck, Sparkles } from "lucide-react";
-import { getProduct, PRODUCTS, type Product } from "@/lib/products";
+import { type Product } from "@/lib/products";
+import { useAdminStore } from "@/lib/admin-store";
 import { formatBRL, useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/produto/$id")({
   loader: ({ params }) => {
-    const product = getProduct(params.id);
-    if (!product) throw notFound();
-    return { product };
+    return { id: params.id };
   },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.product.name} — Grimm's Collection` },
-          { name: "description", content: loaderData.product.description },
-          { property: "og:title", content: loaderData.product.name },
-          { property: "og:description", content: loaderData.product.description },
-          { property: "og:image", content: loaderData.product.image },
-        ]
-      : [],
-  }),
   notFoundComponent: () => (
     <div className="container mx-auto py-32 text-center">
       <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
@@ -37,13 +25,18 @@ export const Route = createFileRoute("/produto/$id")({
 });
 
 function ProductPage() {
-  const { product } = Route.useLoaderData() as { product: Product };
+  const { id } = Route.useLoaderData() as { id: string };
+  const { products } = useAdminStore();
+  const product = products.find(p => p.id === id);
+
+  if (!product) throw notFound();
+
   const { add } = useCart();
   const [activeImg, setActiveImg] = useState(0);
   const [color, setColor] = useState(product.colors[0]?.name);
   const [qty, setQty] = useState(1);
 
-  const related = PRODUCTS.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
+  const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
 
   return (
     <div className="container mx-auto px-4 lg:px-8 py-10 lg:py-16">

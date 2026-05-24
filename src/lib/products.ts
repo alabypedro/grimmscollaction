@@ -1,9 +1,9 @@
-import p1 from "@/assets/product-1.jpg";
-import p2 from "@/assets/product-2.jpg";
-import p3 from "@/assets/product-3.jpg";
-import p4 from "@/assets/product-4.jpg";
-import p5 from "@/assets/product-5.jpg";
-import p6 from "@/assets/product-6.jpg";
+import p1 from "../assets/product-1.jpg";
+import p2 from "../assets/product-2.jpg";
+import p3 from "../assets/product-3.jpg";
+import p4 from "../assets/product-4.jpg";
+import p5 from "../assets/product-5.jpg";
+import p6 from "../assets/product-6.jpg";
 
 export type Category =
   | "Miniaturas e Figuras"
