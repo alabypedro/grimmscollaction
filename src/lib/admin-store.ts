@@ -13,13 +13,13 @@ export const useAdminStore = create<AdminStore>()(
   persist(
     (set) => ({
       products: PRODUCTS,
-      addProduct: (product) => set((state) => ({ products: [...state.products, product] })),
-      updateProduct: (product) =>
-        set((state) => ({
+      addProduct: (product: Product) => set((state: AdminStore) => ({ products: [...state.products, product] })),
+      updateProduct: (product: Product) =>
+        set((state: AdminStore) => ({
           products: state.products.map((p) => (p.id === product.id ? product : p)),
         })),
-      deleteProduct: (id) =>
-        set((state) => ({ products: state.products.filter((p) => p.id !== id) })),
+      deleteProduct: (id: string) =>
+        set((state: AdminStore) => ({ products: state.products.filter((p) => p.id !== id) })),
     }),
     {
       name: 'admin-products-storage',
