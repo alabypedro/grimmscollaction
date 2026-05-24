@@ -461,9 +461,9 @@ function ProductFormModal({ onClose, product, onSave, categories, onAddCategory 
               <div className="space-y-2">
                 <Label className="text-xs text-zinc-500 italic">Atalhos rápidos:</Label>
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Tamanho', '')}>+ Tamanho</Button>
-                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Material', '')}>+ Material</Button>
-                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Peso', '')}>+ Peso</Button>
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Tamanho', ' ')}>+ Tamanho</Button>
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Material', ' ')}>+ Material</Button>
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Peso', ' ')}>+ Peso</Button>
                 </div>
               </div>
             </div>
