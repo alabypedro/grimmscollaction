@@ -10,8 +10,6 @@ export const Route = createFileRoute("/produto/$id")({
   loader: ({ params }) => {
     return { id: params.id };
   },
-  component: ProductPage,
-});
   notFoundComponent: () => (
     <div className="container mx-auto py-32 text-center">
       <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
