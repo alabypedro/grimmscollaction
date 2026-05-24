@@ -26,7 +26,7 @@ export const Route = createFileRoute('/admin')({
 });
 
 function AdminPage() {
-  const { products, addProduct, updateProduct, deleteProduct } = useAdminStore();
+  const { products, addProduct, updateProduct, deleteProduct, categories, addCategory } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -165,7 +165,9 @@ function AdminPage() {
         <ProductFormModal 
           isOpen={isFormOpen} 
           onClose={() => setIsFormOpen(false)} 
-          product={editingProduct} 
+          product={editingProduct}
+          categories={categories}
+          onAddCategory={addCategory}
           onSave={(data) => {
             if (editingProduct) {
               updateProduct(data);
@@ -192,10 +194,12 @@ interface ProductFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: Product | null;
+  categories: string[];
+  onAddCategory: (category: string) => void;
   onSave: (data: Product) => void;
 }
 
-function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
+function ProductFormModal({ onClose, product, onSave, categories, onAddCategory }: ProductFormModalProps) {
   const [formData, setFormData] = useState<Partial<Product>>(
     product || {
       name: '',
@@ -226,10 +230,12 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
   const addSpec = (label?: string, value?: string) => {
     const l = label || newSpec.label;
     const v = value || newSpec.value;
-    if (l && v) {
+    
+    // Allow adding shortcut specs even with empty values
+    if (l) {
       setFormData(prev => ({
         ...prev,
-        specs: [...(prev.specs || []), { label: l, value: v }]
+        specs: [...(prev.specs || []), { label: l, value: v || '-' }]
       }));
       if (!label) setNewSpec({ label: '', value: '' });
     }
@@ -319,22 +325,22 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
                       value={formData.category}
                       onChange={e => setFormData({...formData, category: e.target.value as Category})}
                     >
-                      {CATEGORIES.map(cat => (
+                      {categories.map(cat => (
                         <option key={cat} value={cat} className="bg-[#0F0F0F]">{cat}</option>
                       ))}
                     </select>
                     <Input 
-                      placeholder="Nova Categoria..."
+                      placeholder="Criar nova..."
                       className="w-32 bg-black/60 border-white/10 text-sm"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          const val = e.currentTarget.value;
-                          if (val && !CATEGORIES.includes(val as any)) {
-                            // Note: To persist this long-term, you'd need a backend or a shared store.
-                            // For now, we update the local form data.
+                          const val = e.currentTarget.value.trim();
+                          if (val) {
+                            onAddCategory(val);
                             setFormData({...formData, category: val as Category});
                             e.currentTarget.value = '';
+                            toast.success(`Categoria "${val}" adicionada!`);
                           }
                         }
                       }}
@@ -455,19 +461,36 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
               <div className="space-y-2">
                 <Label className="text-xs text-zinc-500 italic">Atalhos rápidos:</Label>
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Tamanho', '')}>+ Tamanho</Button>
-                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Material', '')}>+ Material</Button>
-                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Peso', '')}>+ Peso</Button>
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Tamanho', ' ')}>+ Tamanho</Button>
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Material', ' ')}>+ Material</Button>
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Peso', ' ')}>+ Peso</Button>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
               {(formData.specs || []).map((spec, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-black/40 border border-white/5 rounded-lg group">
-                  <div className="text-sm">
-                    <span className="text-zinc-500">{spec.label}: </span>
-                    <span className="text-white font-medium">{spec.value}</span>
+                <div key={idx} className="flex items-center gap-2 p-3 bg-black/40 border border-white/5 rounded-lg group">
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <Input 
+                      className="h-8 bg-transparent border-none text-xs text-zinc-500 p-0 focus-visible:ring-0" 
+                      value={spec.label} 
+                      onChange={(e) => {
+                        const newSpecs = [...(formData.specs || [])];
+                        newSpecs[idx].label = e.target.value;
+                        setFormData({...formData, specs: newSpecs});
+                      }}
+                    />
+                    <Input 
+                      className="h-8 bg-transparent border-none text-xs text-white p-0 focus-visible:ring-0 font-medium" 
+                      value={spec.value} 
+                      placeholder="Definir valor..."
+                      onChange={(e) => {
+                        const newSpecs = [...(formData.specs || [])];
+                        newSpecs[idx].value = e.target.value;
+                        setFormData({...formData, specs: newSpecs});
+                      }}
+                    />
                   </div>
                   <button type="button" onClick={() => removeSpec(idx)} className="p-1 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Trash2 className="w-4 h-4" />
