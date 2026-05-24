@@ -230,10 +230,12 @@ function ProductFormModal({ onClose, product, onSave, categories, onAddCategory 
   const addSpec = (label?: string, value?: string) => {
     const l = label || newSpec.label;
     const v = value || newSpec.value;
-    if (l && v) {
+    
+    // Allow adding shortcut specs even with empty values
+    if (l) {
       setFormData(prev => ({
         ...prev,
-        specs: [...(prev.specs || []), { label: l, value: v }]
+        specs: [...(prev.specs || []), { label: l, value: v || '-' }]
       }));
       if (!label) setNewSpec({ label: '', value: '' });
     }
