@@ -1,10 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
 import React, { useState } from 'react';
-
-export const Route = createFileRoute('/admin')({
-  component: AdminPage,
-});
-
 import { useAdminStore } from '@/lib/admin-store';
 import { Product, Category, CATEGORIES, MATERIALS, Material } from '@/lib/products';
 import { Button } from '@/components/ui/button';
@@ -26,7 +21,11 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function AdminPage() {
+export const Route = createFileRoute('/admin')({
+  component: AdminPage,
+});
+
+function AdminPage() {
   const { products, addProduct, updateProduct, deleteProduct } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
