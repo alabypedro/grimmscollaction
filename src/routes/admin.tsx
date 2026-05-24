@@ -207,8 +207,12 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
       gallery: [],
       specs: [],
       colors: [],
+      featured: false,
     }
   );
+
+  const [newSpec, setNewSpec] = useState({ label: '', value: '' });
+  const [newColor, setNewColor] = useState({ name: '', hex: '#8B00FF' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -219,100 +223,266 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
     onSave(formData as Product);
   };
 
+  const addSpec = () => {
+    if (newSpec.label && newSpec.value) {
+      setFormData({
+        ...formData,
+        specs: [...(formData.specs || []), { ...newSpec }]
+      });
+      setNewSpec({ label: '', value: '' });
+    }
+  };
+
+  const removeSpec = (index: number) => {
+    setFormData({
+      ...formData,
+      specs: (formData.specs || []).filter((_, i) => i !== index)
+    });
+  };
+
+  const addColor = () => {
+    if (newColor.name && newColor.hex) {
+      setFormData({
+        ...formData,
+        colors: [...(formData.colors || []), { ...newColor }]
+      });
+      setNewColor({ name: '', hex: '#8B00FF' });
+    }
+  };
+
+  const removeColor = (index: number) => {
+    setFormData({
+      ...formData,
+      colors: (formData.colors || []).filter((_, i) => i !== index)
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl bg-[#111111] border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/20">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            {product ? <Edit className="w-5 h-5 text-[#8B00FF]" /> : <Plus className="w-5 h-5 text-[#8B00FF]" />}
-            {product ? 'Editar Produto' : 'Novo Produto'}
-          </h2>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-            <X className="w-5 h-5" />
+      <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
+      <div className="relative w-full max-w-4xl bg-[#0F0F0F] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(139,0,255,0.15)] overflow-hidden max-h-[95vh] flex flex-col">
+        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/40">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-500/10 rounded-lg">
+              {product ? <Edit className="w-5 h-5 text-[#8B00FF]" /> : <Plus className="w-5 h-5 text-[#8B00FF]" />}
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-white">
+                {product ? 'Editar Produto' : 'Novo Produto'}
+              </h2>
+              <p className="text-xs text-zinc-500">Configure os detalhes do seu item premium</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors group">
+            <X className="w-5 h-5 text-zinc-500 group-hover:text-white" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-thin scrollbar-thumb-white/10">
+          {/* Sessão: Informações Básicas */}
+          <section className="space-y-6">
+            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+              <Package className="w-4 h-4" /> Informações Básicas
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="name" className="text-zinc-400">Nome do Produto *</Label>
+                <Input 
+                  id="name"
+                  className="bg-black/60 border-white/10 focus:border-purple-500/50 transition-colors"
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                  placeholder="Ex: Capacete Dragon"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="price" className="text-zinc-400">Preço (R$) *</Label>
+                <Input 
+                  id="price"
+                  type="number"
+                  step="0.01"
+                  className="bg-black/60 border-white/10 focus:border-purple-500/50 transition-colors"
+                  value={formData.price}
+                  onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label className="text-zinc-400">Categoria *</Label>
+                <select 
+                  className="w-full h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                  value={formData.category}
+                  onChange={e => setFormData({...formData, category: e.target.value as Category})}
+                >
+                  {CATEGORIES.map(cat => (
+                    <option key={cat} value={cat} className="bg-[#0F0F0F]">{cat}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-zinc-400">Material *</Label>
+                <select 
+                  className="w-full h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                  value={formData.material}
+                  onChange={e => setFormData({...formData, material: e.target.value as Material})}
+                >
+                  {MATERIALS.map(mat => (
+                    <option key={mat} value={mat} className="bg-[#0F0F0F]">{mat}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input 
+                type="checkbox" 
+                id="featured" 
+                checked={formData.featured}
+                onChange={e => setFormData({...formData, featured: e.target.checked})}
+                className="w-4 h-4 rounded border-white/10 bg-black text-purple-600 focus:ring-purple-500/50"
+              />
+              <Label htmlFor="featured" className="text-zinc-400 cursor-pointer select-none">Produto em Destaque (Home)</Label>
+            </div>
+          </section>
+
+          {/* Sessão: Mídia e Descrição */}
+          <section className="space-y-6 pt-6 border-t border-white/5">
+            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+              <Layout className="w-4 h-4" /> Mídia e Conteúdo
+            </h3>
             <div className="space-y-2">
-              <Label htmlFor="name">Nome do Produto *</Label>
-              <Input 
-                id="name"
-                className="bg-black/40 border-white/10"
-                value={formData.name}
-                onChange={e => setFormData({...formData, name: e.target.value})}
-                placeholder="Ex: Capacete Dragon"
+              <Label htmlFor="image" className="text-zinc-400">URL da Imagem Principal *</Label>
+              <div className="flex gap-4">
+                <Input 
+                  id="image"
+                  className="bg-black/60 border-white/10 focus:border-purple-500/50 flex-1"
+                  value={formData.image}
+                  onChange={e => setFormData({...formData, image: e.target.value})}
+                  placeholder="https://..."
+                />
+                {formData.image && (
+                  <div className="w-10 h-10 rounded-md border border-white/10 overflow-hidden bg-black flex-shrink-0">
+                    <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description" className="text-zinc-400">Descrição Detalhada</Label>
+              <Textarea 
+                id="description"
+                className="bg-black/60 border-white/10 min-h-[120px] focus:border-purple-500/50"
+                value={formData.description}
+                onChange={e => setFormData({...formData, description: e.target.value})}
+                placeholder="Conte a história deste produto, detalhes técnicos, etc..."
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="price">Preço (R$) *</Label>
-              <Input 
-                id="price"
-                type="number"
-                step="0.01"
-                className="bg-black/40 border-white/10"
-                value={formData.price}
-                onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})}
-              />
+          </section>
+
+          {/* Sessão: Especificações Técnicas */}
+          <section className="space-y-6 pt-6 border-t border-white/5">
+            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+              <Layers className="w-4 h-4" /> Especificações Técnicas
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
+              <div className="space-y-2">
+                <Label className="text-xs text-zinc-500">Rótulo (ex: Altura)</Label>
+                <Input 
+                  placeholder="Label" 
+                  value={newSpec.label} 
+                  onChange={e => setNewSpec({...newSpec, label: e.target.value})}
+                  className="bg-black/60 border-white/10 h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-zinc-500">Valor (ex: 75mm)</Label>
+                <Input 
+                  placeholder="Valor" 
+                  value={newSpec.value} 
+                  onChange={e => setNewSpec({...newSpec, value: e.target.value})}
+                  className="bg-black/60 border-white/10 h-9 text-sm"
+                />
+              </div>
+              <Button type="button" onClick={addSpec} className="bg-white/5 hover:bg-white/10 text-white h-9 border border-white/10">
+                Adicionar Spec
+              </Button>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label>Categoria *</Label>
-              <select 
-                className="w-full h-10 px-3 rounded-md bg-black/40 border border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-[#8B00FF]/50"
-                value={formData.category}
-                onChange={e => setFormData({...formData, category: e.target.value as Category})}
-              >
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+              {(formData.specs || []).map((spec, idx) => (
+                <div key={idx} className="flex items-center justify-between p-3 bg-black/40 border border-white/5 rounded-lg group">
+                  <div className="text-sm">
+                    <span className="text-zinc-500">{spec.label}: </span>
+                    <span className="text-white font-medium">{spec.value}</span>
+                  </div>
+                  <button type="button" onClick={() => removeSpec(idx)} className="p-1 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
-            <div className="space-y-2">
-              <Label>Material *</Label>
-              <select 
-                className="w-full h-10 px-3 rounded-md bg-black/40 border border-white/10 text-sm focus:outline-none focus:ring-2 focus:ring-[#8B00FF]/50"
-                value={formData.material}
-                onChange={e => setFormData({...formData, material: e.target.value as Material})}
-              >
-                {MATERIALS.map(mat => (
-                  <option key={mat} value={mat}>{mat}</option>
-                ))}
-              </select>
+          </section>
+
+          {/* Sessão: Cores */}
+          <section className="space-y-6 pt-6 border-t border-white/5">
+            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
+              <Palette className="w-4 h-4" /> Opções de Cores
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
+              <div className="space-y-2">
+                <Label className="text-xs text-zinc-500">Nome da Cor</Label>
+                <Input 
+                  placeholder="Nome" 
+                  value={newColor.name} 
+                  onChange={e => setNewColor({...newColor, name: e.target.value})}
+                  className="bg-black/60 border-white/10 h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-zinc-500">Cor Hex</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    type="color" 
+                    value={newColor.hex} 
+                    onChange={e => setNewColor({...newColor, hex: e.target.value})}
+                    className="w-10 h-9 p-0 bg-transparent border-none"
+                  />
+                  <Input 
+                    placeholder="#000000" 
+                    value={newColor.hex} 
+                    onChange={e => setNewColor({...newColor, hex: e.target.value})}
+                    className="bg-black/60 border-white/10 h-9 text-sm flex-1"
+                  />
+                </div>
+              </div>
+              <Button type="button" onClick={addColor} className="bg-white/5 hover:bg-white/10 text-white h-9 border border-white/10">
+                Adicionar Cor
+              </Button>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="image">URL da Imagem Principal *</Label>
-            <Input 
-              id="image"
-              className="bg-black/40 border-white/10"
-              value={formData.image}
-              onChange={e => setFormData({...formData, image: e.target.value})}
-              placeholder="https://..."
-            />
-          </div>
+            <div className="flex flex-wrap gap-2 mt-4">
+              {(formData.colors || []).map((color, idx) => (
+                <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-white/5 rounded-full group">
+                  <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: color.hex }} />
+                  <span className="text-xs text-zinc-300">{color.name}</span>
+                  <button type="button" onClick={() => removeColor(idx)} className="text-zinc-600 hover:text-red-500 ml-1">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Textarea 
-              id="description"
-              className="bg-black/40 border-white/10 min-h-[100px]"
-              value={formData.description}
-              onChange={e => setFormData({...formData, description: e.target.value})}
-              placeholder="Detalhes sobre o produto..."
-            />
-          </div>
-
-          <div className="pt-4 border-t border-white/5 flex gap-3">
-             <Button type="button" variant="ghost" className="flex-1 border border-white/10" onClick={onClose}>
-               Cancelar
+          {/* Ações do Rodapé */}
+          <div className="pt-8 border-t border-white/5 flex gap-4">
+             <Button type="button" variant="ghost" className="flex-1 border border-white/10 text-zinc-400 hover:text-white" onClick={onClose}>
+               Descartar
              </Button>
-             <Button type="submit" className="flex-1 bg-[#8B00FF] hover:bg-[#7000CC]">
-               {product ? 'Salvar Alterações' : 'Criar Produto'}
+             <Button type="submit" className="flex-1 bg-[#8B00FF] hover:bg-[#7000CC] text-white shadow-[0_0_20px_rgba(139,0,255,0.3)]">
+               {product ? 'Salvar Alterações' : 'Publicar Produto'}
              </Button>
           </div>
         </form>
