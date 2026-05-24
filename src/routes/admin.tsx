@@ -223,13 +223,15 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
     onSave(formData as Product);
   };
 
-  const addSpec = () => {
-    if (newSpec.label && newSpec.value) {
-      setFormData({
-        ...formData,
-        specs: [...(formData.specs || []), { ...newSpec }]
-      });
-      setNewSpec({ label: '', value: '' });
+  const addSpec = (label?: string, value?: string) => {
+    const l = label || newSpec.label;
+    const v = value || newSpec.value;
+    if (l && v) {
+      setFormData(prev => ({
+        ...prev,
+        specs: [...(prev.specs || []), { label: l, value: v }]
+      }));
+      if (!label) setNewSpec({ label: '', value: '' });
     }
   };
 
