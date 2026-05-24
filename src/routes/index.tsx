@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Sparkles, Shield, Truck, Zap, Star, Quote } from "lucide-react";
+import { ArrowRight, Sparkles, Shield, Truck, Zap, Star, Quote, Search } from "lucide-react";
 import hero from "@/assets/hero-product.jpg";
 import { CATEGORIES } from "@/lib/products";
 import { useAdminStore } from "@/lib/admin-store";
@@ -107,14 +107,15 @@ function Index() {
           <Link to="/categorias" className="text-sm text-muted-foreground hover:text-primary">Ver todas →</Link>
         </div>
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          {CATEGORIES.map((c, i) => (
+          {dynamicCategories.map((c, i) => (
             <Link
               key={c}
               to="/loja"
+              search={{ category: c }}
               className="group relative aspect-[3/4] rounded-lg overflow-hidden bg-card border border-border card-hover"
             >
               <img
-                src={products[i]?.image || products[0]?.image}
+                src={products.find(p => p.category === c)?.image || products[0]?.image}
                 alt={c}
                 loading="lazy"
                 className="h-full w-full object-cover opacity-50 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700"
