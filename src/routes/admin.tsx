@@ -194,10 +194,12 @@ interface ProductFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: Product | null;
+  categories: string[];
+  onAddCategory: (category: string) => void;
   onSave: (data: Product) => void;
 }
 
-function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
+function ProductFormModal({ onClose, product, onSave, categories, onAddCategory }: ProductFormModalProps) {
   const [formData, setFormData] = useState<Partial<Product>>(
     product || {
       name: '',
