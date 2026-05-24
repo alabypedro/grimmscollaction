@@ -323,22 +323,22 @@ function ProductFormModal({ onClose, product, onSave, categories, onAddCategory 
                       value={formData.category}
                       onChange={e => setFormData({...formData, category: e.target.value as Category})}
                     >
-                      {CATEGORIES.map(cat => (
+                      {categories.map(cat => (
                         <option key={cat} value={cat} className="bg-[#0F0F0F]">{cat}</option>
                       ))}
                     </select>
                     <Input 
-                      placeholder="Nova Categoria..."
+                      placeholder="Criar nova..."
                       className="w-32 bg-black/60 border-white/10 text-sm"
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.preventDefault();
-                          const val = e.currentTarget.value;
-                          if (val && !CATEGORIES.includes(val as any)) {
-                            // Note: To persist this long-term, you'd need a backend or a shared store.
-                            // For now, we update the local form data.
+                          const val = e.currentTarget.value.trim();
+                          if (val) {
+                            onAddCategory(val);
                             setFormData({...formData, category: val as Category});
                             e.currentTarget.value = '';
+                            toast.success(`Categoria "${val}" adicionada!`);
                           }
                         }
                       }}
