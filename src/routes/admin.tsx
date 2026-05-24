@@ -223,13 +223,15 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
     onSave(formData as Product);
   };
 
-  const addSpec = () => {
-    if (newSpec.label && newSpec.value) {
-      setFormData({
-        ...formData,
-        specs: [...(formData.specs || []), { ...newSpec }]
-      });
-      setNewSpec({ label: '', value: '' });
+  const addSpec = (label?: string, value?: string) => {
+    const l = label || newSpec.label;
+    const v = value || newSpec.value;
+    if (l && v) {
+      setFormData(prev => ({
+        ...prev,
+        specs: [...(prev.specs || []), { label: l, value: v }]
+      }));
+      if (!label) setNewSpec({ label: '', value: '' });
     }
   };
 
@@ -309,18 +311,36 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-zinc-400">Categoria *</Label>
-                <select 
-                  className="w-full h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                  value={formData.category}
-                  onChange={e => setFormData({...formData, category: e.target.value as Category})}
-                >
-                  {CATEGORIES.map(cat => (
-                    <option key={cat} value={cat} className="bg-[#0F0F0F]">{cat}</option>
-                  ))}
-                </select>
-              </div>
+                <div className="space-y-2">
+                  <Label className="text-zinc-400">Categoria *</Label>
+                  <div className="flex gap-2">
+                    <select 
+                      className="flex-1 h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-colors"
+                      value={formData.category}
+                      onChange={e => setFormData({...formData, category: e.target.value as Category})}
+                    >
+                      {CATEGORIES.map(cat => (
+                        <option key={cat} value={cat} className="bg-[#0F0F0F]">{cat}</option>
+                      ))}
+                    </select>
+                    <Input 
+                      placeholder="Nova Categoria..."
+                      className="w-32 bg-black/60 border-white/10 text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const val = e.currentTarget.value;
+                          if (val && !CATEGORIES.includes(val as any)) {
+                            // Note: To persist this long-term, you'd need a backend or a shared store.
+                            // For now, we update the local form data.
+                            setFormData({...formData, category: val as Category});
+                            e.currentTarget.value = '';
+                          }
+                        }
+                      }}
+                    />
+                  </div>
+                </div>
               <div className="space-y-2">
                 <Label className="text-zinc-400">Material *</Label>
                 <select 
@@ -352,16 +372,36 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
             <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
               <Layout className="w-4 h-4" /> Mídia e Conteúdo
             </h3>
-            <div className="space-y-2">
-              <Label htmlFor="image" className="text-zinc-400">URL da Imagem Principal *</Label>
-              <div className="flex gap-4">
-                <Input 
-                  id="image"
-                  className="bg-black/60 border-white/10 focus:border-purple-500/50 flex-1"
-                  value={formData.image}
-                  onChange={e => setFormData({...formData, image: e.target.value})}
-                  placeholder="https://..."
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="image" className="text-zinc-400">URL da Imagem ou Upload Local *</Label>
+                  <div className="flex gap-4">
+                    <Input 
+                      id="image"
+                      className="bg-black/60 border-white/10 focus:border-purple-500/50 flex-1"
+                      value={formData.image}
+                      onChange={e => setFormData({...formData, image: e.target.value})}
+                      placeholder="https://..."
+                    />
+                    <div className="relative">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              setFormData({...formData, image: reader.result as string});
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                      />
+                      <Button type="button" variant="outline" className="border-white/10 text-xs">
+                        Upload
+                      </Button>
+                    </div>
                 {formData.image && (
                   <div className="w-10 h-10 rounded-md border border-white/10 overflow-hidden bg-black flex-shrink-0">
                     <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
@@ -406,9 +446,20 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
                   className="bg-black/60 border-white/10 h-9 text-sm"
                 />
               </div>
-              <Button type="button" onClick={addSpec} className="bg-white/5 hover:bg-white/10 text-white h-9 border border-white/10">
+              <Button type="button" onClick={() => addSpec()} className="bg-white/5 hover:bg-white/10 text-white h-9 border border-white/10">
                 Adicionar Spec
               </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 border-t border-white/5 pt-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-zinc-500 italic">Atalhos rápidos:</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Tamanho', '')}>+ Tamanho</Button>
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Material', '')}>+ Material</Button>
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Peso', '')}>+ Peso</Button>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
