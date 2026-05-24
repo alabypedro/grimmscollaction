@@ -80,9 +80,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Loja premium de produtos impressos em 3D: miniaturas, cosplay, decoração e peças funcionais. Drops exclusivos e edições limitadas." },
       { name: "author", content: "Grimm's Collection" },
       { property: "og:title", content: "Grimm's Collection — Impressão 3D Premium" },
-      { property: "og:description", content: "Loja premium de produtos impressos em 3D de alta qualidade." },
+      { property: "og:description", content: "Loja premium de produtos impressos em 3D: miniaturas, cosplay, decoração e peças funcionais. Drops exclusivos e edições limitadas." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Grimm's Collection — Impressão 3D Premium" },
+      { name: "twitter:description", content: "Loja premium de produtos impressos em 3D: miniaturas, cosplay, decoração e peças funcionais. Drops exclusivos e edições limitadas." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/7bc18147-e086-4d1d-a478-f40c7a2ff83a" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/7bc18147-e086-4d1d-a478-f40c7a2ff83a" },
     ],
     links: [
       {
