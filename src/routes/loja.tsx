@@ -6,6 +6,11 @@ import { useAdminStore } from "@/lib/admin-store";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/loja")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      category: (search.category as string) || undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Loja — Grimm's Collection" },
@@ -18,8 +23,9 @@ export const Route = createFileRoute("/loja")({
 });
 
 function LojaPage() {
-  const { products } = useAdminStore();
-  const [cat, setCat] = useState<Category | "Todas">("Todas");
+  const { products, categories: dynamicCategories } = useAdminStore();
+  const search = Route.useSearch();
+  const [cat, setCat] = useState<string>(search.category || "Todas");
   const [mat, setMat] = useState<Material | "Todos">("Todos");
   const [maxPrice, setMaxPrice] = useState(1000);
   const [sort, setSort] = useState<"popular" | "price-asc" | "price-desc">("popular");
@@ -54,8 +60,8 @@ function LojaPage() {
           </div>
 
           <FilterGroup title="Categoria">
-            {(["Todas", ...CATEGORIES] as const).map((c) => (
-              <FilterButton key={c} active={cat === c} onClick={() => setCat(c as Category | "Todas")}>{c}</FilterButton>
+            {(["Todas", ...dynamicCategories] as const).map((c) => (
+              <FilterButton key={c} active={cat === c} onClick={() => setCat(c)}>{c}</FilterButton>
             ))}
           </FilterGroup>
 

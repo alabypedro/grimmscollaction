@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CATEGORIES, PRODUCTS } from "@/lib/products";
+import { PRODUCTS } from "@/lib/products";
+import { useAdminStore } from "@/lib/admin-store";
 import { ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/categorias")({
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/categorias")({
 });
 
 function CategoriasPage() {
+  const { products, categories } = useAdminStore();
   return (
     <div className="container mx-auto px-4 lg:px-8 py-12 lg:py-16">
       <div className="mb-12">
@@ -23,13 +25,14 @@ function CategoriasPage() {
         <p className="text-muted-foreground mt-2 max-w-2xl">Cada categoria é um universo. Curadoria rigorosa para colecionadores exigentes.</p>
       </div>
       <div className="grid md:grid-cols-2 gap-6">
-        {CATEGORIES.map((c, i) => {
-          const sample = PRODUCTS[i];
-          const count = PRODUCTS.filter((p) => p.category === c).length;
+        {categories.map((c, i) => {
+          const sample = products.find(p => p.category === c) || products[0];
+          const count = products.filter((p) => p.category === c).length;
           return (
             <Link
               key={c}
               to="/loja"
+              search={{ category: c }}
               className="group relative h-72 rounded-xl overflow-hidden border border-border card-hover"
             >
               <img src={sample.image} alt={c} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
