@@ -18,7 +18,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { products } = useAdminStore();
+  const { products, categories: dynamicCategories } = useAdminStore();
   const featured = products.filter((p) => p.featured);
   return (
     <>
