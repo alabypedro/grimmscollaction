@@ -451,6 +451,17 @@ function ProductFormModal({ onClose, product, onSave }: ProductFormModalProps) {
               </Button>
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 border-t border-white/5 pt-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-zinc-500 italic">Atalhos rápidos:</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Tamanho', '')}>+ Tamanho</Button>
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Material', '')}>+ Material</Button>
+                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Peso', '')}>+ Peso</Button>
+                </div>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
               {(formData.specs || []).map((spec, idx) => (
                 <div key={idx} className="flex items-center justify-between p-3 bg-black/40 border border-white/5 rounded-lg group">
