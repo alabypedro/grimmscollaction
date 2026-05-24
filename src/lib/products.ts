@@ -5,20 +5,15 @@ import p4 from "../assets/product-4.jpg";
 import p5 from "../assets/product-5.jpg";
 import p6 from "../assets/product-6.jpg";
 
-export type Category =
-  | "Miniaturas e Figuras"
-  | "Cosplay & Acessórios"
-  | "Decoração e Esculturas"
-  | "Gadgets e Utilidades"
-  | "Peças Funcionais";
-
-export const CATEGORIES: Category[] = [
+export const CATEGORIES = [
   "Miniaturas e Figuras",
   "Cosplay & Acessórios",
   "Decoração e Esculturas",
   "Gadgets e Utilidades",
   "Peças Funcionais",
-];
+] as const;
+
+export type Category = (typeof CATEGORIES)[number] | (string & {});
 
 export const MATERIALS = ["PLA", "PETG", "ABS", "Resina", "TPU"] as const;
 export type Material = (typeof MATERIALS)[number];
