@@ -470,10 +470,27 @@ function ProductFormModal({ onClose, product, onSave, categories, onAddCategory 
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
               {(formData.specs || []).map((spec, idx) => (
-                <div key={idx} className="flex items-center justify-between p-3 bg-black/40 border border-white/5 rounded-lg group">
-                  <div className="text-sm">
-                    <span className="text-zinc-500">{spec.label}: </span>
-                    <span className="text-white font-medium">{spec.value}</span>
+                <div key={idx} className="flex items-center gap-2 p-3 bg-black/40 border border-white/5 rounded-lg group">
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <Input 
+                      className="h-8 bg-transparent border-none text-xs text-zinc-500 p-0 focus-visible:ring-0" 
+                      value={spec.label} 
+                      onChange={(e) => {
+                        const newSpecs = [...(formData.specs || [])];
+                        newSpecs[idx].label = e.target.value;
+                        setFormData({...formData, specs: newSpecs});
+                      }}
+                    />
+                    <Input 
+                      className="h-8 bg-transparent border-none text-xs text-white p-0 focus-visible:ring-0 font-medium" 
+                      value={spec.value} 
+                      placeholder="Definir valor..."
+                      onChange={(e) => {
+                        const newSpecs = [...(formData.specs || [])];
+                        newSpecs[idx].value = e.target.value;
+                        setFormData({...formData, specs: newSpecs});
+                      }}
+                    />
                   </div>
                   <button type="button" onClick={() => removeSpec(idx)} className="p-1 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Trash2 className="w-4 h-4" />
