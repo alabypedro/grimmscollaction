@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowRight, Sparkles, Shield, Truck, Zap, Star, Quote } from "lucide-react";
 import hero from "@/assets/hero-product.jpg";
-import { PRODUCTS, CATEGORIES } from "@/lib/products";
+import { CATEGORIES } from "@/lib/products";
+import { useAdminStore } from "@/lib/admin-store";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/")({
@@ -17,7 +18,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const featured = PRODUCTS.filter((p) => p.featured);
+  const { products } = useAdminStore();
+  const featured = products.filter((p) => p.featured);
   return (
     <>
       {/* HERO */}
@@ -112,7 +114,7 @@ function Index() {
               className="group relative aspect-[3/4] rounded-lg overflow-hidden bg-card border border-border card-hover"
             >
               <img
-                src={PRODUCTS[i].image}
+                src={products[i]?.image || products[0]?.image}
                 alt={c}
                 loading="lazy"
                 className="h-full w-full object-cover opacity-50 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700"

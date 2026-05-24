@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { PRODUCTS, CATEGORIES, MATERIALS, type Category, type Material } from "@/lib/products";
+import { CATEGORIES, MATERIALS, type Category, type Material } from "@/lib/products";
+import { useAdminStore } from "@/lib/admin-store";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/loja")({
@@ -17,13 +18,14 @@ export const Route = createFileRoute("/loja")({
 });
 
 function LojaPage() {
+  const { products } = useAdminStore();
   const [cat, setCat] = useState<Category | "Todas">("Todas");
   const [mat, setMat] = useState<Material | "Todos">("Todos");
   const [maxPrice, setMaxPrice] = useState(1000);
   const [sort, setSort] = useState<"popular" | "price-asc" | "price-desc">("popular");
 
   const filtered = useMemo(() => {
-    let list = PRODUCTS.filter((p) => {
+    let list = products.filter((p) => {
       if (cat !== "Todas" && p.category !== cat) return false;
       if (mat !== "Todos" && p.material !== mat) return false;
       if (p.price > maxPrice) return false;
@@ -33,7 +35,7 @@ function LojaPage() {
     if (sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
     return list;
-  }, [cat, mat, maxPrice, sort]);
+  }, [products, cat, mat, maxPrice, sort]);
 
   return (
     <div className="container mx-auto px-4 lg:px-8 py-12 lg:py-16">
