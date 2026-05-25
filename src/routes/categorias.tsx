@@ -10,6 +10,10 @@ export const Route = createFileRoute("/categorias")({
       { name: "description", content: "Explore as categorias de impressão 3D: miniaturas, cosplay, decoração, gadgets e peças funcionais." },
       { property: "og:title", content: "Categorias — Grimm's Collection" },
       { property: "og:description", content: "Universos curados da Grimm's Collection." },
+      { property: "og:url", content: "https://grimmscollaction.lovable.app/categorias" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://grimmscollaction.lovable.app/categorias" },
     ],
   }),
   component: CategoriasPage,
