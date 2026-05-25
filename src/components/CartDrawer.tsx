@@ -22,7 +22,7 @@ export function CartDrawer() {
             <h3 className="font-bold tracking-wide">SEU CARRINHO</h3>
             <span className="text-xs text-muted-foreground">({count})</span>
           </div>
-          <button onClick={() => setOpen(false)} className="h-9 w-9 grid place-items-center rounded-md hover:bg-secondary">
+          <button onClick={() => setOpen(false)} aria-label="Fechar carrinho" className="h-9 w-9 grid place-items-center rounded-md hover:bg-secondary">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -56,11 +56,11 @@ export function CartDrawer() {
                     <p className="text-sm text-primary font-bold mt-1">{formatBRL(it.product.price)}</p>
                     <div className="flex items-center justify-between mt-2">
                       <div className="flex items-center border border-border rounded-md">
-                        <button onClick={() => updateQty(it.product.id, it.qty - 1)} className="h-7 w-7 grid place-items-center hover:bg-secondary"><Minus className="h-3 w-3" /></button>
+                        <button onClick={() => updateQty(it.product.id, it.qty - 1)} aria-label={`Diminuir quantidade de ${it.product.name}`} className="h-7 w-7 grid place-items-center hover:bg-secondary"><Minus className="h-3 w-3" /></button>
                         <span className="w-8 text-center text-sm">{it.qty}</span>
-                        <button onClick={() => updateQty(it.product.id, it.qty + 1)} className="h-7 w-7 grid place-items-center hover:bg-secondary"><Plus className="h-3 w-3" /></button>
+                        <button onClick={() => updateQty(it.product.id, it.qty + 1)} aria-label={`Aumentar quantidade de ${it.product.name}`} className="h-7 w-7 grid place-items-center hover:bg-secondary"><Plus className="h-3 w-3" /></button>
                       </div>
-                      <button onClick={() => remove(it.product.id)} className="text-muted-foreground hover:text-destructive">
+                      <button onClick={() => remove(it.product.id)} aria-label={`Remover ${it.product.name} do carrinho`} className="text-muted-foreground hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
