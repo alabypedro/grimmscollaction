@@ -12,6 +12,10 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Descubra peças impressas em 3D de alta qualidade: miniaturas, cosplay, decoração e gadgets exclusivos." },
       { property: "og:title", content: "Grimm's Collection — Impressão 3D Premium" },
       { property: "og:description", content: "Loja premium de impressão 3D." },
+      { property: "og:url", content: "https://grimmscollaction.lovable.app/" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://grimmscollaction.lovable.app/" },
     ],
   }),
   component: Index,
