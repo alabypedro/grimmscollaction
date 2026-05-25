@@ -8,6 +8,10 @@ export const Route = createFileRoute("/sobre")({
       { name: "description", content: "Conheça a história, a filosofia e o processo artesanal da Grimm's Collection." },
       { property: "og:title", content: "Sobre a Grimm's Collection" },
       { property: "og:description", content: "Impressão 3D premium, obsessão pelo detalhe." },
+      { property: "og:url", content: "https://grimmscollaction.lovable.app/sobre" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://grimmscollaction.lovable.app/sobre" },
     ],
   }),
   component: SobrePage,
@@ -36,7 +40,7 @@ function SobrePage() {
             <div className="h-12 w-12 rounded-lg bg-primary/15 grid place-items-center mb-4">
               <I className="h-5 w-5 text-primary" />
             </div>
-            <h3 className="font-bold text-lg mb-2">{t}</h3>
+            <h2 className="font-bold text-lg mb-2">{t}</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">{d}</p>
           </div>
         ))}

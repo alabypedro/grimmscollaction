@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as LojaRouteImport } from './routes/loja'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as CategoriasRouteImport } from './routes/categorias'
@@ -23,6 +24,11 @@ import { Route as AuthCadastroRouteImport } from './routes/auth.cadastro'
 const SobreRoute = SobreRouteImport.update({
   id: '/sobre',
   path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LojaRoute = LojaRouteImport.update({
@@ -77,6 +83,7 @@ export interface FileRoutesByFullPath {
   '/categorias': typeof CategoriasRoute
   '/contato': typeof ContatoRoute
   '/loja': typeof LojaRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/auth/cadastro': typeof AuthCadastroRoute
   '/auth/login': typeof AuthLoginRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/categorias': typeof CategoriasRoute
   '/contato': typeof ContatoRoute
   '/loja': typeof LojaRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/auth/cadastro': typeof AuthCadastroRoute
   '/auth/login': typeof AuthLoginRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/categorias': typeof CategoriasRoute
   '/contato': typeof ContatoRoute
   '/loja': typeof LojaRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/auth/cadastro': typeof AuthCadastroRoute
   '/auth/login': typeof AuthLoginRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/categorias'
     | '/contato'
     | '/loja'
+    | '/sitemap.xml'
     | '/sobre'
     | '/auth/cadastro'
     | '/auth/login'
@@ -128,6 +138,7 @@ export interface FileRouteTypes {
     | '/categorias'
     | '/contato'
     | '/loja'
+    | '/sitemap.xml'
     | '/sobre'
     | '/auth/cadastro'
     | '/auth/login'
@@ -140,6 +151,7 @@ export interface FileRouteTypes {
     | '/categorias'
     | '/contato'
     | '/loja'
+    | '/sitemap.xml'
     | '/sobre'
     | '/auth/cadastro'
     | '/auth/login'
@@ -153,6 +165,7 @@ export interface RootRouteChildren {
   CategoriasRoute: typeof CategoriasRoute
   ContatoRoute: typeof ContatoRoute
   LojaRoute: typeof LojaRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SobreRoute: typeof SobreRoute
   AuthCadastroRoute: typeof AuthCadastroRoute
   AuthLoginRoute: typeof AuthLoginRoute
@@ -167,6 +180,13 @@ declare module '@tanstack/react-router' {
       path: '/sobre'
       fullPath: '/sobre'
       preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/loja': {
@@ -241,6 +261,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategoriasRoute: CategoriasRoute,
   ContatoRoute: ContatoRoute,
   LojaRoute: LojaRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   SobreRoute: SobreRoute,
   AuthCadastroRoute: AuthCadastroRoute,
   AuthLoginRoute: AuthLoginRoute,

@@ -1,14 +1,74 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, Star, Plus, Minus, Shield, Truck, Sparkles } from "lucide-react";
-import { type Product } from "@/lib/products";
+import { PRODUCTS, type Product } from "@/lib/products";
 import { useAdminStore } from "@/lib/admin-store";
 import { formatBRL, useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/produto/$id")({
   loader: ({ params }) => {
-    return { id: params.id };
+    const product = PRODUCTS.find((p) => p.id === params.id);
+    return { id: params.id, product };
+  },
+  head: ({ params, loaderData }) => {
+    const url = `https://grimmscollaction.lovable.app/produto/${params.id}`;
+    const product = loaderData?.product;
+    const title = product
+      ? `${product.name} — Grimm's Collection`.slice(0, 60)
+      : "Produto — Grimm's Collection";
+    const description = product
+      ? product.description.slice(0, 158)
+      : "Peça impressa em 3D premium da Grimm's Collection.";
+    const image = product?.image
+      ? (product.image.startsWith("http") ? product.image : `https://grimmscollaction.lovable.app${product.image}`)
+      : undefined;
+
+    const meta: Array<Record<string, string>> = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:url", content: url },
+      { property: "og:type", content: "product" },
+    ];
+    if (image) {
+      meta.push({ property: "og:image", content: image });
+      meta.push({ name: "twitter:image", content: image });
+    }
+
+    const scripts: Array<{ type: string; children: string }> = [];
+    if (product) {
+      scripts.push({
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.name,
+          description: product.description,
+          image: image ? [image] : undefined,
+          category: product.category,
+          offers: {
+            "@type": "Offer",
+            price: product.price,
+            priceCurrency: "BRL",
+            availability: "https://schema.org/InStock",
+            url,
+          },
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: product.rating,
+            reviewCount: product.reviews,
+          },
+        }),
+      });
+    }
+
+    return {
+      meta,
+      links: [{ rel: "canonical", href: url }],
+      scripts,
+    };
   },
   notFoundComponent: () => (
     <div className="container mx-auto py-32 text-center">
@@ -56,9 +116,10 @@ function ProductPage() {
               <button
                 key={i}
                 onClick={() => setActiveImg(i)}
+                aria-label={`Ver imagem ${i + 1} de ${product.name}`}
                 className={`aspect-square rounded-md overflow-hidden border-2 transition-colors ${activeImg === i ? "border-primary" : "border-border hover:border-muted-foreground"}`}
               >
-                <img src={g} alt={`view ${i + 1}`} className="h-full w-full object-cover" />
+                <img src={g} alt={`${product.name} — imagem ${i + 1}`} className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
@@ -101,9 +162,9 @@ function ProductPage() {
 
           <div className="flex items-center gap-4 pt-2">
             <div className="flex items-center border border-border rounded-md h-12">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="h-12 w-12 grid place-items-center hover:bg-secondary"><Minus className="h-4 w-4" /></button>
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Diminuir quantidade" className="h-12 w-12 grid place-items-center hover:bg-secondary"><Minus className="h-4 w-4" /></button>
               <span className="w-12 text-center font-bold">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="h-12 w-12 grid place-items-center hover:bg-secondary"><Plus className="h-4 w-4" /></button>
+              <button onClick={() => setQty((q) => q + 1)} aria-label="Aumentar quantidade" className="h-12 w-12 grid place-items-center hover:bg-secondary"><Plus className="h-4 w-4" /></button>
             </div>
             <button
               onClick={() => add(product, qty, color)}

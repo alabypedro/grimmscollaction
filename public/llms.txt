@@ -1,0 +1,17 @@
+# Grimm's Collection
+
+> Loja premium brasileira de produtos impressos em 3D de alta qualidade: miniaturas, cosplay, decoração, gadgets e peças funcionais.
+
+A Grimm's Collection é um estúdio dedicado à impressão 3D premium, com curadoria rigorosa, tecnologia 8K e acabamento artesanal. Sediada em São Paulo, atende colecionadores, cosplayers e amantes do design.
+
+## Páginas
+
+- [Home](/): Apresentação da marca, destaques e drops em destaque.
+- [Loja](/loja): Catálogo completo com filtros por categoria, material e preço.
+- [Categorias](/categorias): Universos curados — miniaturas, cosplay, decoração, gadgets e funcionais.
+- [Sobre](/sobre): História, filosofia e processo da Grimm's Collection.
+- [Contato](/contato): Canais de atendimento e formulário para encomendas.
+
+## Opcional
+
+- [Sitemap](/sitemap.xml)

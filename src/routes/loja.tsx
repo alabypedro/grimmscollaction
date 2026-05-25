@@ -17,6 +17,10 @@ export const Route = createFileRoute("/loja")({
       { name: "description", content: "Explore toda a coleção de peças impressas em 3D premium: miniaturas, cosplay, decoração, gadgets e peças funcionais." },
       { property: "og:title", content: "Loja — Grimm's Collection" },
       { property: "og:description", content: "Catálogo completo de impressão 3D premium." },
+      { property: "og:url", content: "https://grimmscollaction.lovable.app/loja" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://grimmscollaction.lovable.app/loja" },
     ],
   }),
   component: LojaPage,
@@ -54,9 +58,10 @@ function LojaPage() {
       <div className="grid lg:grid-cols-[260px_1fr] gap-10">
         {/* FILTROS */}
         <aside className="space-y-8 lg:sticky lg:top-24 self-start">
+          <h2 className="sr-only">Filtros</h2>
           <div className="flex items-center gap-2 pb-3 border-b border-border">
             <SlidersHorizontal className="h-4 w-4 text-primary" />
-            <h3 className="text-xs tracking-[0.25em] font-bold">FILTROS</h3>
+            <p className="text-xs tracking-[0.25em] font-bold">FILTROS</p>
           </div>
 
           <FilterGroup title="Categoria">
@@ -82,6 +87,7 @@ function LojaPage() {
           <FilterGroup title={`Preço máximo: R$ ${maxPrice}`}>
             <input
               type="range"
+              aria-label="Preço máximo em reais"
               min={50}
               max={1000}
               step={10}
@@ -104,6 +110,7 @@ function LojaPage() {
 
         {/* GRID */}
         <div>
+          <h2 className="sr-only">Produtos encontrados</h2>
           <p className="text-sm text-muted-foreground mb-6">{filtered.length} produto{filtered.length !== 1 && "s"}</p>
           {filtered.length === 0 ? (
             <div className="text-center py-20 border border-dashed border-border rounded-lg">
@@ -123,7 +130,7 @@ function LojaPage() {
 function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <h4 className="text-sm font-bold text-foreground">{title}</h4>
+      <h3 className="text-sm font-bold text-foreground">{title}</h3>
       <div className="space-y-1">{children}</div>
     </div>
   );

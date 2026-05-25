@@ -117,7 +117,7 @@ function PerfilPage() {
           <div className="flex items-center gap-4">
             <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
               {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="h-full w-full rounded-full object-cover" />
+                <img src={profile.avatar_url} alt={`Avatar de ${profile.full_name || profile.username || "usuário"}`} className="h-full w-full rounded-full object-cover" />
               ) : (
                 <User className="h-8 w-8 text-primary" />
               )}
@@ -127,7 +127,7 @@ function PerfilPage() {
               <p className="text-sm text-muted-foreground">Gerencie suas informações</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={handleLogout} className="text-muted-foreground hover:text-destructive">
+          <Button variant="ghost" size="icon" aria-label="Sair da conta" onClick={handleLogout} className="text-muted-foreground hover:text-destructive">
             <LogOut className="h-5 w-5" />
           </Button>
         </div>
