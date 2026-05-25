@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import React, { useState } from 'react';
 import { useAdminStore } from '@/lib/admin-store';
+import { supabase } from '@/integrations/supabase/client';
 import { Product, Category, CATEGORIES, MATERIALS, Material } from '@/lib/products';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,12 @@ import {
 import { toast } from 'sonner';
 
 export const Route = createFileRoute('/admin')({
+  beforeLoad: async ({ location }) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      throw redirect({ to: '/auth/login', search: { redirect: location.href } });
+    }
+  },
   component: AdminPage,
 });
 
