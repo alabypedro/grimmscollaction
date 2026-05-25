@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Sparkles, Mail, Lock, ArrowRight } from "lucide-react";
+import { Sparkles, Mail, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
@@ -33,8 +33,6 @@ function LoginPage() {
     }
     setLoading(false);
   };
-
-
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
       <div className="w-full max-w-md space-y-8 bg-card/40 backdrop-blur-xl p-8 rounded-2xl border border-border shadow-2xl">
@@ -85,8 +83,6 @@ function LoginPage() {
             {loading ? "Entrando..." : "ENTRAR"}
           </Button>
         </form>
-
-
         <p className="text-center text-sm text-muted-foreground">
           Não tem uma conta?{" "}
           <Link to="/auth/cadastro" className="text-primary font-bold hover:underline">
