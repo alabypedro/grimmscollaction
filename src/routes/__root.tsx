@@ -79,6 +79,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "Grimm's Collection — Impressão 3D Premium" },
       { name: "description", content: "Loja premium de produtos impressos em 3D: miniaturas, cosplay, decoração e peças funcionais. Drops exclusivos e edições limitadas." },
       { name: "author", content: "Grimm's Collection" },
+      { name: "google-site-verification", content: "IRN-RwCdpUUWajqbdb8FWiGnSbbN9nNvNiAGJMfK-gE" },
       { property: "og:title", content: "Grimm's Collection — Impressão 3D Premium" },
       { property: "og:description", content: "Loja premium de produtos impressos em 3D: miniaturas, cosplay, decoração e peças funcionais. Drops exclusivos e edições limitadas." },
       { property: "og:type", content: "website" },
