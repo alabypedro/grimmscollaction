@@ -86,6 +86,7 @@ function LojaPage() {
           <FilterGroup title={`Preço máximo: R$ ${maxPrice}`}>
             <input
               type="range"
+              aria-label="Preço máximo em reais"
               min={50}
               max={1000}
               step={10}
