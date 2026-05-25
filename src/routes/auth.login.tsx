@@ -34,15 +34,6 @@ function LoginPage() {
     setLoading(false);
   };
 
-  const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-    if (error) toast.error("Erro ao entrar com Google: " + error.message);
-  };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4">
@@ -95,19 +86,6 @@ function LoginPage() {
           </Button>
         </form>
 
-        <div className="relative py-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border"></div>
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Ou continue com</span>
-          </div>
-        </div>
-
-        <Button variant="outline" className="w-full h-12 border-border hover:bg-secondary/50" onClick={handleGoogleLogin}>
-          <img src="https://www.google.com/favicon.ico" className="w-4 h-4 mr-2" alt="Google" />
-          Google
-        </Button>
 
         <p className="text-center text-sm text-muted-foreground">
           Não tem uma conta?{" "}
