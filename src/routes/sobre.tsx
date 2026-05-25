@@ -8,6 +8,10 @@ export const Route = createFileRoute("/sobre")({
       { name: "description", content: "Conheça a história, a filosofia e o processo artesanal da Grimm's Collection." },
       { property: "og:title", content: "Sobre a Grimm's Collection" },
       { property: "og:description", content: "Impressão 3D premium, obsessão pelo detalhe." },
+      { property: "og:url", content: "https://grimmscollaction.lovable.app/sobre" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://grimmscollaction.lovable.app/sobre" },
     ],
   }),
   component: SobrePage,
