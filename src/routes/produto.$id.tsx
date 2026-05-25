@@ -116,9 +116,10 @@ function ProductPage() {
               <button
                 key={i}
                 onClick={() => setActiveImg(i)}
+                aria-label={`Ver imagem ${i + 1} de ${product.name}`}
                 className={`aspect-square rounded-md overflow-hidden border-2 transition-colors ${activeImg === i ? "border-primary" : "border-border hover:border-muted-foreground"}`}
               >
-                <img src={g} alt={`view ${i + 1}`} className="h-full w-full object-cover" />
+                <img src={g} alt={`${product.name} — imagem ${i + 1}`} className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
@@ -161,9 +162,9 @@ function ProductPage() {
 
           <div className="flex items-center gap-4 pt-2">
             <div className="flex items-center border border-border rounded-md h-12">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="h-12 w-12 grid place-items-center hover:bg-secondary"><Minus className="h-4 w-4" /></button>
+              <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Diminuir quantidade" className="h-12 w-12 grid place-items-center hover:bg-secondary"><Minus className="h-4 w-4" /></button>
               <span className="w-12 text-center font-bold">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} className="h-12 w-12 grid place-items-center hover:bg-secondary"><Plus className="h-4 w-4" /></button>
+              <button onClick={() => setQty((q) => q + 1)} aria-label="Aumentar quantidade" className="h-12 w-12 grid place-items-center hover:bg-secondary"><Plus className="h-4 w-4" /></button>
             </div>
             <button
               onClick={() => add(product, qty, color)}
