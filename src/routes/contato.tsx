@@ -9,6 +9,10 @@ export const Route = createFileRoute("/contato")({
       { name: "description", content: "Fale com a Grimm's Collection. Tire dúvidas, peça encomendas customizadas ou colabore com a marca." },
       { property: "og:title", content: "Contato — Grimm's Collection" },
       { property: "og:description", content: "Estamos prontos para responder." },
+      { property: "og:url", content: "https://grimmscollaction.lovable.app/contato" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://grimmscollaction.lovable.app/contato" },
     ],
   }),
   component: ContatoPage,
