@@ -29,7 +29,7 @@ function LoginPage() {
       toast.error("Erro ao entrar: " + error.message);
     } else {
       toast.success("Bem-vindo de volta!");
-      navigate({ to: "/" });
+      navigate({ to: "/", replace: true });
     }
     setLoading(false);
   };
