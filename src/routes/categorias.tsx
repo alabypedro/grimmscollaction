@@ -29,6 +29,7 @@ function CategoriasPage() {
         <p className="text-muted-foreground mt-2 max-w-2xl">Cada categoria é um universo. Curadoria rigorosa para colecionadores exigentes.</p>
       </div>
       <div className="grid md:grid-cols-2 gap-6">
+        <h2 className="sr-only">Lista de categorias</h2>
         {categories.map((c, i) => {
           const sample = products.find(p => p.category === c) || products[0];
           const count = products.filter((p) => p.category === c).length;
