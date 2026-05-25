@@ -16,6 +16,7 @@ import { Route as CategoriasRouteImport } from './routes/categorias'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
+import { Route as AuthPerfilRouteImport } from './routes/auth.perfil'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthCadastroRouteImport } from './routes/auth.cadastro'
 
@@ -54,6 +55,11 @@ const ProdutoIdRoute = ProdutoIdRouteImport.update({
   path: '/produto/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthPerfilRoute = AuthPerfilRouteImport.update({
+  id: '/auth/perfil',
+  path: '/auth/perfil',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
@@ -74,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/sobre': typeof SobreRoute
   '/auth/cadastro': typeof AuthCadastroRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/perfil': typeof AuthPerfilRoute
   '/produto/$id': typeof ProdutoIdRoute
 }
 export interface FileRoutesByTo {
@@ -85,6 +92,7 @@ export interface FileRoutesByTo {
   '/sobre': typeof SobreRoute
   '/auth/cadastro': typeof AuthCadastroRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/perfil': typeof AuthPerfilRoute
   '/produto/$id': typeof ProdutoIdRoute
 }
 export interface FileRoutesById {
@@ -97,6 +105,7 @@ export interface FileRoutesById {
   '/sobre': typeof SobreRoute
   '/auth/cadastro': typeof AuthCadastroRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/perfil': typeof AuthPerfilRoute
   '/produto/$id': typeof ProdutoIdRoute
 }
 export interface FileRouteTypes {
@@ -110,6 +119,7 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/auth/cadastro'
     | '/auth/login'
+    | '/auth/perfil'
     | '/produto/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,6 +131,7 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/auth/cadastro'
     | '/auth/login'
+    | '/auth/perfil'
     | '/produto/$id'
   id:
     | '__root__'
@@ -132,6 +143,7 @@ export interface FileRouteTypes {
     | '/sobre'
     | '/auth/cadastro'
     | '/auth/login'
+    | '/auth/perfil'
     | '/produto/$id'
   fileRoutesById: FileRoutesById
 }
@@ -144,6 +156,7 @@ export interface RootRouteChildren {
   SobreRoute: typeof SobreRoute
   AuthCadastroRoute: typeof AuthCadastroRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  AuthPerfilRoute: typeof AuthPerfilRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
 }
 
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/perfil': {
+      id: '/auth/perfil'
+      path: '/auth/perfil'
+      fullPath: '/auth/perfil'
+      preLoaderRoute: typeof AuthPerfilRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/login': {
       id: '/auth/login'
       path: '/auth/login'
@@ -224,8 +244,19 @@ const rootRouteChildren: RootRouteChildren = {
   SobreRoute: SobreRoute,
   AuthCadastroRoute: AuthCadastroRoute,
   AuthLoginRoute: AuthLoginRoute,
+  AuthPerfilRoute: AuthPerfilRoute,
   ProdutoIdRoute: ProdutoIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
