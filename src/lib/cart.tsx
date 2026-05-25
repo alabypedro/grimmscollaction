@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import type { Product } from "./products";
+import { supabase } from "@/integrations/supabase/client";
 
 export interface CartItem {
   product: Product;
@@ -15,6 +16,7 @@ interface CartCtx {
   remove: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
   clear: () => void;
+  syncCart: () => Promise<void>;
   count: number;
   total: number;
 }
@@ -35,6 +37,39 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   });
   const [open, setOpen] = useState(false);
+
+  // Function to sync local cart with backend
+  const syncCart = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    try {
+      // 1. Get current backend items
+      const { data: dbItems, error: fetchError } = await supabase
+        .from('cart_items')
+        .select('*')
+        .eq('user_id', session.user.id);
+
+      if (fetchError) throw fetchError;
+
+      // 2. Logic to merge (Simplified: Local takes precedence for now or we just combine)
+      // For a real production app, you might want more complex merging logic
+      // Here we'll just push local items to DB if they don't exist
+      for (const item of items) {
+        const exists = dbItems?.find(db => db.product_id === item.product.id);
+        if (!exists) {
+          await supabase.from('cart_items').insert({
+            user_id: session.user.id,
+            product_id: item.product.id,
+            quantity: item.qty,
+            color: item.color
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Sync error", err);
+    }
+  }, [items]);
 
   useEffect(() => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
@@ -71,7 +106,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const total = items.reduce((s, i) => s + i.qty * i.product.price, 0);
 
   return (
-    <Ctx.Provider value={{ items, open, setOpen, add, remove, updateQty, clear, count, total }}>
+    <Ctx.Provider value={{ items, open, setOpen, add, remove, updateQty, clear, syncCart, count, total }}>
       {children}
     </Ctx.Provider>
   );

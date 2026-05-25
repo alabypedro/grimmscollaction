@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Sparkles, Mail, Lock } from "lucide-react";
+import { useCart } from "@/lib/cart";
 
 export const Route = createFileRoute("/auth/login")({
   component: LoginPage,
@@ -17,6 +18,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const navigate = useNavigate();
+  const { syncCart } = useCart();
 
   const validate = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -49,6 +51,7 @@ function LoginPage() {
         toast.error("Erro ao entrar: " + error.message);
       } else {
         toast.success("Bem-vindo de volta!");
+        await syncCart();
         navigate({ to: "/", replace: true });
       }
     } catch (err: any) {
