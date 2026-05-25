@@ -30,6 +30,7 @@ function ContatoPage() {
 
       <div className="grid lg:grid-cols-[1fr_1.5fr] gap-12">
         <div className="space-y-6">
+          <h2 className="sr-only">Canais de contato</h2>
           {[
             { I: Mail, t: "E-mail", d: "ola@grimmscollection.com" },
             { I: MessageCircle, t: "WhatsApp", d: "+55 11 99999-0000" },
@@ -51,12 +52,13 @@ function ContatoPage() {
           onSubmit={(e) => { e.preventDefault(); setSent(true); }}
           className="p-8 rounded-xl border border-border bg-card space-y-5"
         >
+          <h2 className="sr-only">Formulário de contato</h2>
           {sent ? (
             <div className="text-center py-12">
               <div className="h-16 w-16 rounded-full bg-primary/20 grid place-items-center mx-auto mb-4 glow-purple">
                 <Mail className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-2xl font-bold mb-2">Mensagem enviada</h3>
+              <h2 className="text-2xl font-bold mb-2">Mensagem enviada</h2>
               <p className="text-muted-foreground">Respondemos em até 24 horas.</p>
             </div>
           ) : (
@@ -67,8 +69,10 @@ function ContatoPage() {
               </div>
               <Field label="Assunto" name="subject" required />
               <div className="space-y-2">
-                <label className="text-xs tracking-[0.2em] font-bold text-muted-foreground">MENSAGEM</label>
+                <label htmlFor="contato-mensagem" className="text-xs tracking-[0.2em] font-bold text-muted-foreground">MENSAGEM</label>
                 <textarea
+                  id="contato-mensagem"
+                  name="message"
                   required
                   rows={6}
                   className="w-full bg-input border border-border rounded-md p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
@@ -86,10 +90,12 @@ function ContatoPage() {
 }
 
 function Field({ label, name, type = "text", required }: { label: string; name: string; type?: string; required?: boolean }) {
+  const id = `contato-${name}`;
   return (
     <div className="space-y-2">
-      <label className="text-xs tracking-[0.2em] font-bold text-muted-foreground">{label.toUpperCase()}</label>
+      <label htmlFor={id} className="text-xs tracking-[0.2em] font-bold text-muted-foreground">{label.toUpperCase()}</label>
       <input
+        id={id}
         type={type}
         name={name}
         required={required}
