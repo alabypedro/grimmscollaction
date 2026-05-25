@@ -40,7 +40,7 @@ function SobrePage() {
             <div className="h-12 w-12 rounded-lg bg-primary/15 grid place-items-center mb-4">
               <I className="h-5 w-5 text-primary" />
             </div>
-            <h3 className="font-bold text-lg mb-2">{t}</h3>
+            <h2 className="font-bold text-lg mb-2">{t}</h2>
             <p className="text-sm text-muted-foreground leading-relaxed">{d}</p>
           </div>
         ))}
