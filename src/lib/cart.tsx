@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import type { Product } from "./products";
 
 export interface CartItem {
@@ -14,15 +14,31 @@ interface CartCtx {
   add: (product: Product, qty?: number, color?: string) => void;
   remove: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
+  clear: () => void;
   count: number;
   total: number;
 }
 
 const Ctx = createContext<CartCtx | null>(null);
 
+const CART_STORAGE_KEY = "grimms_cart_v1";
+
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem(CART_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      console.error("Error loading cart from storage", e);
+      return [];
+    }
+  });
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  }, [items]);
 
   const add = useCallback((product: Product, qty = 1, color?: string) => {
     setItems((prev) => {
@@ -47,11 +63,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     );
   }, []);
 
+  const clear = useCallback(() => {
+    setItems([]);
+  }, []);
+
   const count = items.reduce((s, i) => s + i.qty, 0);
   const total = items.reduce((s, i) => s + i.qty * i.product.price, 0);
 
   return (
-    <Ctx.Provider value={{ items, open, setOpen, add, remove, updateQty, count, total }}>
+    <Ctx.Provider value={{ items, open, setOpen, add, remove, updateQty, clear, count, total }}>
       {children}
     </Ctx.Provider>
   );
