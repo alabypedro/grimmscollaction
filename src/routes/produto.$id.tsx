@@ -1,14 +1,74 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, Star, Plus, Minus, Shield, Truck, Sparkles } from "lucide-react";
-import { type Product } from "@/lib/products";
+import { PRODUCTS, type Product } from "@/lib/products";
 import { useAdminStore } from "@/lib/admin-store";
 import { formatBRL, useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/produto/$id")({
   loader: ({ params }) => {
-    return { id: params.id };
+    const product = PRODUCTS.find((p) => p.id === params.id);
+    return { id: params.id, product };
+  },
+  head: ({ params, loaderData }) => {
+    const url = `https://grimmscollaction.lovable.app/produto/${params.id}`;
+    const product = loaderData?.product;
+    const title = product
+      ? `${product.name} — Grimm's Collection`.slice(0, 60)
+      : "Produto — Grimm's Collection";
+    const description = product
+      ? product.description.slice(0, 158)
+      : "Peça impressa em 3D premium da Grimm's Collection.";
+    const image = product?.image
+      ? (product.image.startsWith("http") ? product.image : `https://grimmscollaction.lovable.app${product.image}`)
+      : undefined;
+
+    const meta: Array<Record<string, string>> = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:url", content: url },
+      { property: "og:type", content: "product" },
+    ];
+    if (image) {
+      meta.push({ property: "og:image", content: image });
+      meta.push({ name: "twitter:image", content: image });
+    }
+
+    const scripts: Array<{ type: string; children: string }> = [];
+    if (product) {
+      scripts.push({
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Product",
+          name: product.name,
+          description: product.description,
+          image: image ? [image] : undefined,
+          category: product.category,
+          offers: {
+            "@type": "Offer",
+            price: product.price,
+            priceCurrency: "BRL",
+            availability: "https://schema.org/InStock",
+            url,
+          },
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: product.rating,
+            reviewCount: product.reviews,
+          },
+        }),
+      });
+    }
+
+    return {
+      meta,
+      links: [{ rel: "canonical", href: url }],
+      scripts,
+    };
   },
   notFoundComponent: () => (
     <div className="container mx-auto py-32 text-center">
