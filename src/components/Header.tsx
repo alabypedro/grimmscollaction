@@ -115,6 +115,7 @@ export function Header() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 autoFocus
+                aria-label="Buscar produtos"
                 placeholder="Buscar produtos, miniaturas, cosplay..."
                 className="w-full h-11 bg-input border border-border rounded-md pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
               />
