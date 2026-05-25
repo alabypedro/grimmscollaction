@@ -10,6 +10,7 @@ const NAV = [
   { to: "/categorias", label: "Categorias" },
   { to: "/sobre", label: "Sobre" },
   { to: "/contato", label: "Contato" },
+  { to: "/auth/login", label: "Entrar" },
   { to: "/admin", label: "Admin" },
 ] as const;
 
