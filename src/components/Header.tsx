@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Search, ShoppingBag, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { Search, ShoppingBag, Menu, X, User } from "lucide-react";
+import { useState, useEffect } from "react";
 import { Logo } from "./Logo";
 import { useCart } from "@/lib/cart";
+import { supabase } from "@/integrations/supabase/client";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -10,15 +11,28 @@ const NAV = [
   { to: "/categorias", label: "Categorias" },
   { to: "/sobre", label: "Sobre" },
   { to: "/contato", label: "Contato" },
-  { to: "/auth/login", label: "Entrar" },
-  { to: "/admin", label: "Admin" },
 ] as const;
 
 export function Header() {
   const { count, setOpen } = useCart();
   const [mobile, setMobile] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [session, setSession] = useState<any>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border">
@@ -39,6 +53,30 @@ export function Header() {
                 <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === n.to ? "w-full" : "w-0 group-hover:w-full"}`} />
               </Link>
             ))}
+            {session ? (
+              <Link
+                to="/auth/perfil"
+                className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/auth/perfil" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Perfil
+                <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/auth/perfil" ? "w-full" : "w-0 group-hover:w-full"}`} />
+              </Link>
+            ) : (
+              <Link
+                to="/auth/login"
+                className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/auth/login" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Entrar
+                <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/auth/login" ? "w-full" : "w-0 group-hover:w-full"}`} />
+              </Link>
+            )}
+            <Link
+              to="/admin"
+              className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/admin" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Admin
+              <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/admin" ? "w-full" : "w-0 group-hover:w-full"}`} />
+            </Link>
           </nav>
 
           <div className="flex items-center gap-1">
@@ -96,6 +134,30 @@ export function Header() {
                 {n.label}
               </Link>
             ))}
+            {session ? (
+              <Link
+                to="/auth/perfil"
+                onClick={() => setMobile(false)}
+                className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/auth/perfil" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
+              >
+                Perfil
+              </Link>
+            ) : (
+              <Link
+                to="/auth/login"
+                onClick={() => setMobile(false)}
+                className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/auth/login" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
+              >
+                Entrar
+              </Link>
+            )}
+            <Link
+              to="/admin"
+              onClick={() => setMobile(false)}
+              className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/admin" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
+            >
+              Admin
+            </Link>
           </nav>
         )}
       </div>
