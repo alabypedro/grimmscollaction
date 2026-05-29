@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User, Mail, Camera, Save, LogOut, Phone } from "lucide-react";
+import { User, Camera, Save, LogOut, Phone, Globe } from "lucide-react";
 
 export const Route = createFileRoute("/auth/perfil")({
   beforeLoad: async ({ location }) => {
@@ -30,6 +30,7 @@ function PerfilPage() {
     full_name: "",
     avatar_url: "",
     website: "",
+    phone: "",
   });
   const navigate = useNavigate();
 
@@ -49,7 +50,7 @@ function PerfilPage() {
 
       const { data, error, status } = await supabase
         .from("profiles")
-        .select(`username, full_name, avatar_url, website`)
+        .select(`username, full_name, avatar_url, website, phone`)
         .eq("id", user.id)
         .single();
 
@@ -63,6 +64,7 @@ function PerfilPage() {
           full_name: data.full_name || "",
           avatar_url: data.avatar_url || "",
           website: data.website || "",
+          phone: data.phone || "",
         });
       }
     } catch (error: any) {
@@ -114,10 +116,10 @@ function PerfilPage() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-2xl">
-      <div className="bg-card/40 backdrop-blur-xl p-8 rounded-2xl border border-border shadow-2xl space-y-8">
+      <div className="bg-card/40 backdrop-blur-xl p-8 rounded-2xl border border-border shadow-2xl space-y-8 animate-scale-in">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30">
+            <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center border border-primary/30 relative overflow-hidden group">
               {profile.avatar_url ? (
                 <img src={profile.avatar_url} alt={`Avatar de ${profile.full_name || profile.username || "usuário"}`} className="h-full w-full rounded-full object-cover" />
               ) : (
@@ -129,45 +131,69 @@ function PerfilPage() {
               <p className="text-sm text-muted-foreground">Gerencie suas informações</p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" aria-label="Sair da conta" onClick={handleLogout} className="text-muted-foreground hover:text-destructive">
+          <Button variant="ghost" size="icon" aria-label="Sair da conta" onClick={handleLogout} className="text-muted-foreground hover:text-destructive transition-colors">
             <LogOut className="h-5 w-5" />
           </Button>
         </div>
 
         <form onSubmit={updateProfile} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="username">Nome de Usuário</Label>
-            <Input
-              id="username"
-              value={profile.username}
-              onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-              placeholder="@usuario"
-              className="bg-background/50"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="username">Nome de Usuário</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="username"
+                  value={profile.username}
+                  onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                  placeholder="@usuario"
+                  className="pl-10 bg-background/50 h-11"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="full_name">Nome Completo</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="full_name"
+                  value={profile.full_name}
+                  onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
+                  placeholder="Seu nome"
+                  className="pl-10 bg-background/50 h-11"
+                />
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="full_name">Nome Completo</Label>
-            <Input
-              id="full_name"
-              value={profile.full_name}
-              onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-              placeholder="Seu nome"
-              className="bg-background/50"
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Telefone</Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="phone"
+                  value={profile.phone}
+                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  placeholder="(11) 99999-9999"
+                  className="pl-10 bg-background/50 h-11"
+                />
+              </div>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="website">Telefone / Website</Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="website"
-                value={profile.website}
-                onChange={(e) => setProfile({ ...profile, website: e.target.value })}
-                placeholder="(11) 99999-9999"
-                className="pl-10 bg-background/50"
-              />
+            <div className="space-y-2">
+              <Label htmlFor="website">Website</Label>
+              <div className="relative">
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="website"
+                  value={profile.website}
+                  onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                  placeholder="https://..."
+                  className="pl-10 bg-background/50 h-11"
+                />
+              </div>
             </div>
           </div>
 
@@ -180,12 +206,12 @@ function PerfilPage() {
                 value={profile.avatar_url}
                 onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
                 placeholder="https://..."
-                className="pl-10 bg-background/50"
+                className="pl-10 bg-background/50 h-11"
               />
             </div>
           </div>
 
-          <Button type="submit" className="w-full h-12 font-bold glow-purple" disabled={updating}>
+          <Button type="submit" className="w-full h-12 font-bold glow-purple uppercase tracking-widest" disabled={updating}>
             {updating ? "SALVANDO..." : (
               <span className="flex items-center gap-2">
                 <Save className="h-4 w-4" /> SALVAR ALTERAÇÕES
