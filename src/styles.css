@@ -178,14 +178,41 @@
     box-shadow: 0 30px 60px -20px oklch(0.62 0.28 305 / 0.4);
     border-color: oklch(0.62 0.28 305 / 0.6);
   }
+  .glass-strong {
+    @apply bg-background/80 backdrop-blur-xl border-white/10;
+  }
+  .shadow-elegant {
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+  .bg-gradient-hero {
+    background: radial-gradient(circle at top right, oklch(0.62 0.28 305 / 0.15), transparent 40%),
+                radial-gradient(circle at bottom left, oklch(0.62 0.28 305 / 0.1), transparent 40%);
+  }
   @keyframes float-slow {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-12px); }
   }
   .animate-float { animation: float-slow 6s ease-in-out infinite; }
+  
+  @keyframes blob {
+    0% { transform: translate(0px, 0px) scale(1); }
+    33% { transform: translate(30px, -50px) scale(1.1); }
+    66% { transform: translate(-20px, 20px) scale(0.9); }
+    100% { transform: translate(0px, 0px) scale(1); }
+  }
+  .animate-blob {
+    animation: blob 7s infinite;
+  }
   @keyframes pulse-glow {
     0%, 100% { opacity: 0.5; }
     50% { opacity: 1; }
   }
   .animate-pulse-glow { animation: pulse-glow 3s ease-in-out infinite; }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .animate-scale-in {
+    animation: scale-in 0.4s ease-out forwards;
+  }
 }
