@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, Lock, User, Phone, Check, X, Sparkles, UserPlus } from "lucide-react";
+import { Mail, Lock, User, Check, X, Sparkles, UserPlus } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/auth/login")({
@@ -166,6 +166,7 @@ function AuthPage() {
                 </div>
               </div>
             )}
+
 
 
             <div className="space-y-2">
