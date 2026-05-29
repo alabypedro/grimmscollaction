@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Mail, Lock, User, Phone, Check, X, Sparkles, UserPlus } from "lucide-react";
+import { Mail, Lock, User, Check, X, Sparkles, UserPlus } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/auth/login")({
@@ -24,7 +24,6 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
   const [success, setSuccess] = useState(false);
 
   const passwordChecks = {
@@ -57,8 +56,7 @@ function AuthPage() {
           password,
           options: {
             data: { 
-              full_name: name,
-              phone: phone 
+              full_name: name
             },
           },
         });
@@ -169,23 +167,7 @@ function AuthPage() {
               </div>
             )}
 
-            {isSignUp && (
-              <div className="space-y-2 animate-fade-in">
-                <Label htmlFor="phone">Telefone</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="(11) 99999-9999"
-                    className="pl-10 h-11"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-            )}
+
 
             <div className="space-y-2">
               <Label htmlFor="email">E-mail</Label>

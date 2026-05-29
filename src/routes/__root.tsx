@@ -6,7 +6,11 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useRouterState,
+  useNavigate,
 } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 import appCss from "../styles.css?url";
 import { Header } from "@/components/Header";
@@ -144,16 +148,50 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const navigate = useNavigate();
+  const [session, setSession] = useState<any>(null);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setInitialized(true);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setInitialized(true);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const isAuthPage = pathname.startsWith("/auth/login") || pathname.startsWith("/auth/cadastro");
+
+  useEffect(() => {
+    if (initialized && !session && !isAuthPage) {
+      navigate({ to: "/auth/login", replace: true });
+    }
+  }, [session, initialized, isAuthPage, navigate]);
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
       <CartProvider>
         <div className="min-h-screen flex flex-col">
-          <Header />
+          {!isAuthPage && <Header />}
           <main className="flex-1">
             <Outlet />
           </main>
-          <Footer />
+          {!isAuthPage && <Footer />}
           <CartDrawer />
         </div>
       </CartProvider>

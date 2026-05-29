@@ -30,7 +30,7 @@ function PerfilPage() {
     full_name: "",
     avatar_url: "",
     website: "",
-    phone: "",
+    
   });
   const navigate = useNavigate();
 
@@ -50,7 +50,7 @@ function PerfilPage() {
 
       const { data, error, status } = await supabase
         .from("profiles")
-        .select(`username, full_name, avatar_url, website, phone`)
+        .select(`username, full_name, avatar_url, website`)
         .eq("id", user.id)
         .single();
 
@@ -64,7 +64,7 @@ function PerfilPage() {
           full_name: data.full_name || "",
           avatar_url: data.avatar_url || "",
           website: data.website || "",
-          phone: data.phone || "",
+          
         });
       }
     } catch (error: any) {
@@ -166,22 +166,8 @@ function PerfilPage() {
               </div>
             </div>
           </div>
-
+          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="phone">Telefone</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  value={profile.phone}
-                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                  placeholder="(11) 99999-9999"
-                  className="pl-10 bg-background/50 h-11"
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="website">Website</Label>
               <div className="relative">
