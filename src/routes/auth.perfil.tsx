@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User, Mail, Camera, Save, LogOut } from "lucide-react";
+import { User, Mail, Camera, Save, LogOut, Phone } from "lucide-react";
 
 export const Route = createFileRoute("/auth/perfil")({
   beforeLoad: async ({ location }) => {
@@ -29,6 +29,7 @@ function PerfilPage() {
     username: "",
     full_name: "",
     avatar_url: "",
+    website: "",
   });
   const navigate = useNavigate();
 
@@ -48,7 +49,7 @@ function PerfilPage() {
 
       const { data, error, status } = await supabase
         .from("profiles")
-        .select(`username, full_name, avatar_url`)
+        .select(`username, full_name, avatar_url, website`)
         .eq("id", user.id)
         .single();
 
@@ -61,6 +62,7 @@ function PerfilPage() {
           username: data.username || "",
           full_name: data.full_name || "",
           avatar_url: data.avatar_url || "",
+          website: data.website || "",
         });
       }
     } catch (error: any) {
@@ -153,6 +155,20 @@ function PerfilPage() {
               placeholder="Seu nome"
               className="bg-background/50"
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="website">Telefone / Website</Label>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="website"
+                value={profile.website}
+                onChange={(e) => setProfile({ ...profile, website: e.target.value })}
+                placeholder="(11) 99999-9999"
+                className="pl-10 bg-background/50"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

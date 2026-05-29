@@ -1,141 +1,249 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Sparkles, Mail, Lock } from "lucide-react";
-import { useCart } from "@/lib/cart";
+import { Mail, Lock, User, Phone, Check, X, Sparkles, UserPlus } from "lucide-react";
 
 export const Route = createFileRoute("/auth/login")({
-  component: LoginPage,
+  component: AuthPage,
 });
 
-function LoginPage() {
+function AuthPage() {
+  const navigate = useNavigate();
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgot, setIsForgot] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const navigate = useNavigate();
-  const { syncCart } = useCart();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  const validate = () => {
-    const newErrors: { email?: string; password?: string } = {};
-    if (!email) {
-      newErrors.email = "E-mail é obrigatório";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "E-mail inválido";
-    }
-    if (!password) {
-      newErrors.password = "Senha é obrigatória";
-    } else if (password.length < 6) {
-      newErrors.password = "A senha deve ter pelo menos 6 caracteres";
-    }
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const passwordChecks = {
+    length: password.length >= 8 && password.length <= 70,
+    lower: /[a-z]/.test(password),
+    upper: /[A-Z]/.test(password),
+    number: /[0-9]/.test(password),
+    symbol: /[^A-Za-z0-9]/.test(password),
   };
+  const passwordValid = Object.values(passwordChecks).every(Boolean);
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const signUpValid = name.trim().length > 0 && emailValid && passwordValid;
+  const signInValid = emailValid && password.length > 0;
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-
     setLoading(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
 
-      if (error) {
-        toast.error("Erro ao entrar: " + error.message);
+    try {
+      if (isForgot) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/recovery`,
+        });
+        if (error) throw error;
+        toast.success("Email de recuperação enviado!");
+        setIsForgot(false);
+      } else if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { 
+              full_name: name,
+              phone: phone 
+            },
+          },
+        });
+        if (error) throw error;
+        toast.success("Cadastro realizado com sucesso!");
+        setSuccess(true);
+        setTimeout(() => {
+          setIsSignUp(false);
+          setSuccess(false);
+        }, 2000);
       } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
         toast.success("Bem-vindo de volta!");
-        await syncCart();
         navigate({ to: "/", replace: true });
       }
     } catch (err: any) {
-      toast.error("Ocorreu um erro inesperado.");
+      toast.error(err.message || "Erro na autenticação.");
     } finally {
-      setLoading(false);
+      if (!success) setLoading(false);
     }
   };
-  return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <div className="w-full max-w-md space-y-8 bg-card/40 backdrop-blur-xl p-8 rounded-2xl border border-border shadow-2xl">
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-background/50 text-xs tracking-widest text-primary mb-4">
-            <Sparkles className="h-3 w-3" /> ACESSO PREMIUM
-          </div>
-          <h1 className="text-3xl font-black tracking-tight">Entrar</h1>
-          <p className="text-muted-foreground mt-2">Acesse sua Grimm's Collection</p>
-        </div>
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div className="space-y-2">
-            <Label htmlFor="email">E-mail</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                className={`pl-10 ${errors.email ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors({ ...errors, email: undefined });
-                }}
-                required
-              />
-            </div>
-            {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <Label htmlFor="password">Senha</Label>
-              <Link to="/auth/recovery" className="text-xs text-primary hover:underline">Esqueceu?</Link>
-            </div>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                className={`pl-10 ${errors.password ? "border-destructive focus-visible:ring-destructive" : ""}`}
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors({ ...errors, password: undefined });
-                }}
-                required
-              />
-            </div>
-            {errors.password && <p className="text-xs text-destructive mt-1">{errors.password}</p>}
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full h-12 font-bold glow-purple flex items-center justify-center gap-2" 
-            disabled={loading}
-          >
-            {loading ? (
-              <>
-                <div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                ENTRANDO...
-              </>
-            ) : (
-              "ENTRAR"
-            )}
-          </Button>
-        </form>
-        <p className="text-center text-sm text-muted-foreground">
-          Não tem uma conta?{" "}
-          <Link to="/auth/cadastro" className="text-primary font-bold hover:underline">
-            Cadastre-se
-          </Link>
-        </p>
+  if (isForgot) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center px-4">
+        <Card className="w-full max-w-md bg-card/40 backdrop-blur-xl border-border shadow-2xl">
+          <CardHeader className="text-center space-y-2">
+            <CardTitle className="text-2xl font-black">Recuperar Senha</CardTitle>
+            <CardDescription>
+              Enviaremos um link de recuperação para seu e-mail.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleEmailAuth} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">E-mail</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    className="pl-10"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full h-11 glow-purple" disabled={loading || !emailValid}>
+                {loading ? "ENVIANDO..." : "ENVIAR LINK"}
+              </Button>
+              <Button type="button" variant="ghost" className="w-full" onClick={() => setIsForgot(false)}>
+                VOLTAR AO LOGIN
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+      <Card className="w-full max-w-md bg-card/40 backdrop-blur-xl border-border shadow-2xl">
+        <CardHeader className="text-center space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-background/50 text-xs tracking-widest text-primary mx-auto mb-2">
+            {isSignUp ? <UserPlus className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />} 
+            {isSignUp ? "NOVO COLECIONADOR" : "ACESSO PREMIUM"}
+          </div>
+          <CardTitle className="text-3xl font-black tracking-tight">
+            {isSignUp ? "Criar Conta" : "Entrar"}
+          </CardTitle>
+          <CardDescription>
+            {isSignUp ? "Junte-se à Grimm's Collection" : "Acesse sua Grimm's Collection"}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form onSubmit={handleEmailAuth} className="space-y-4">
+            {isSignUp && (
+              <div className="space-y-2 animate-fade-in">
+                <Label htmlFor="name">Nome Completo</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="name"
+                    placeholder="Seu nome"
+                    className="pl-10"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">E-mail</Label>
+              <div className="relative">
+                <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${emailValid ? "text-primary" : "text-muted-foreground"}`} />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  className={`pl-10 ${emailValid ? "border-primary/50" : ""}`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Senha</Label>
+                {!isSignUp && (
+                  <button
+                    type="button"
+                    className="text-xs text-primary hover:underline"
+                    onClick={() => setIsForgot(true)}
+                  >
+                    Esqueceu?
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  className="pl-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+              {isSignUp && (
+                <ul className="mt-3 space-y-1.5 text-xs">
+                  {[
+                    { ok: passwordChecks.length, label: "8 a 70 caracteres" },
+                    { ok: passwordChecks.lower, label: "Letra minúscula" },
+                    { ok: passwordChecks.upper, label: "Letra maiúscula" },
+                    { ok: passwordChecks.number, label: "Número" },
+                    { ok: passwordChecks.symbol, label: "Símbolo (Ex: !@#$%)" },
+                  ].map((r) => (
+                    <li key={r.label} className="flex items-center gap-2">
+                      {r.ok ? (
+                        <Check className="h-3.5 w-3.5 text-primary" />
+                      ) : (
+                        <X className="h-3.5 w-3.5 text-muted-foreground/50" />
+                      )}
+                      <span className={r.ok ? "text-foreground font-medium" : "text-muted-foreground"}>
+                        {r.label}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-12 font-bold glow-purple mt-2"
+              disabled={loading || success || (isSignUp ? !signUpValid : !signInValid)}
+            >
+              {success
+                ? "CONTA CRIADA!"
+                : loading
+                ? "CARREGANDO..."
+                : isSignUp
+                ? "CADASTRAR"
+                : "ENTRAR"}
+            </Button>
+          </form>
+
+          <p className="text-center text-sm text-muted-foreground pt-2">
+            {isSignUp ? "Já tem uma conta?" : "Não tem uma conta?"}{" "}
+            <button
+              type="button"
+              className="text-primary font-bold hover:underline"
+              onClick={() => setIsSignUp(!isSignUp)}
+            >
+              {isSignUp ? "Entrar" : "Cadastre-se"}
+            </button>
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
