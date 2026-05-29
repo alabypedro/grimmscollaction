@@ -24,6 +24,7 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [success, setSuccess] = useState(false);
 
   const passwordChecks = {
@@ -34,8 +35,9 @@ function AuthPage() {
     symbol: /[^A-Za-z0-9]/.test(password),
   };
   const passwordValid = Object.values(passwordChecks).every(Boolean);
+  const passwordsMatch = password === confirmPassword;
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const signUpValid = name.trim().length > 0 && emailValid && passwordValid;
+  const signUpValid = name.trim().length > 0 && emailValid && passwordValid && passwordsMatch;
   const signInValid = emailValid && password.length > 0;
 
   const handleEmailAuth = async (e: React.FormEvent) => {
@@ -233,6 +235,29 @@ function AuthPage() {
                 </ul>
               )}
             </div>
+
+            {isSignUp && (
+              <div className="space-y-2 animate-fade-in">
+                <Label htmlFor="confirmPassword">Confirmar Senha</Label>
+                <div className="relative">
+                  <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${confirmPassword && !passwordsMatch ? "text-destructive" : "text-muted-foreground"}`} />
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    className={`pl-10 h-11 ${confirmPassword && !passwordsMatch ? "border-destructive focus-visible:ring-destructive" : ""}`}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                {confirmPassword && !passwordsMatch && (
+                  <p className="text-[10px] text-destructive font-bold uppercase tracking-wider animate-fade-in">
+                    As senhas não coincidem
+                  </p>
+                )}
+              </div>
+            )}
 
             <Button
               type="submit"
