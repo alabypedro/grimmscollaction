@@ -1,8 +1,8 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import React, { useState } from 'react';
 import { useAdminStore } from '@/lib/admin-store';
 import { supabase } from '@/integrations/supabase/client';
-import { Product, Category, CATEGORIES, MATERIALS, Material } from '@/lib/products';
+import { Product, Category, MATERIALS, Material } from '@/lib/products';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -53,8 +53,8 @@ function AdminPage() {
 
   if (loading) {
     return (
-      <div className=\"min-h-screen flex items-center justify-center bg-background\">
-        <div className=\"h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent\" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
   }
