@@ -23,20 +23,43 @@ import {
 import { toast } from 'sonner';
 
 export const Route = createFileRoute('/admin')({
-  beforeLoad: async ({ location }) => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      throw redirect({ to: '/auth/login', search: { redirect: location.href } });
-    }
-  },
+  // Component handles its own session check to avoid SSR redirect issues
   component: AdminPage,
 });
 
 function AdminPage() {
+  const navigate = useNavigate();
+  const [session, setSession] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate({ to: '/auth/login', search: { redirect: window.location.href } });
+      } else {
+        setSession(session);
+      }
+      setLoading(false);
+    };
+
+    checkSession();
+  }, [navigate]);
+
   const { products, addProduct, updateProduct, deleteProduct, categories, addCategory, deleteCategory } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+  if (loading) {
+    return (
+      <div className=\"min-h-screen flex items-center justify-center bg-background\">
+        <div className=\"h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent\" />
+      </div>
+    );
+  }
+
+  if (!session) return null;
 
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
