@@ -101,7 +101,7 @@ function PerfilPage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate({ to: "/" });
+    navigate({ to: "/auth/login", replace: true });
     toast.success("Até logo!");
   };
 
