@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Star } from "lucide-react";
 import { StarRating } from "./StarRating";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import type { Product } from "@/lib/products";
 import { formatBRL } from "@/lib/cart";

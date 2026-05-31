@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, Star, Plus, Minus, Shield, Truck, Sparkles, Send, Loader2 } from "lucide-react";
 import { StarRating } from "@/components/StarRating";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PRODUCTS, type Product } from "@/lib/products";
