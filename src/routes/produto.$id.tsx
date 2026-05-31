@@ -1,6 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Star, Plus, Minus, Shield, Truck, Sparkles } from "lucide-react";
+import { ArrowLeft, Star, Plus, Minus, Shield, Truck, Sparkles, Send, Loader2 } from "lucide-react";
+import { StarRating } from "@/components/StarRating";
+import { supabase } from "@/lib/supabase";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { PRODUCTS, type Product } from "@/lib/products";
 import { useAdminStore } from "@/lib/admin-store";
 import { formatBRL, useCart } from "@/lib/cart";
@@ -88,6 +92,7 @@ function ProductPage() {
   const { id } = Route.useLoaderData() as { id: string };
   const { products } = useAdminStore();
   const product = products.find(p => p.id === id);
+  const queryClient = useQueryClient();
 
   if (!product) throw notFound();
 
@@ -95,6 +100,64 @@ function ProductPage() {
   const [activeImg, setActiveImg] = useState(0);
   const [color, setColor] = useState(product.colors[0]?.name);
   const [qty, setQty] = useState(1);
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState("");
+
+  const { data: session } = useQuery({
+    queryKey: ["session"],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      return data.session;
+    },
+  });
+
+  const { data: reviews = [], isLoading: isLoadingReviews } = useQuery({
+    queryKey: ["reviews", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("*, profiles(display_name, avatar_url)")
+        .eq("product_id", id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const ratingStats = reviews.length > 0
+    ? {
+        average: (reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / reviews.length).toFixed(1),
+        count: reviews.length
+      }
+    : { average: product.rating.toString(), count: product.reviews };
+
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!session) throw new Error("Você precisa estar logado para avaliar.");
+      
+      const { error } = await supabase.from("reviews").upsert({
+        product_id: id,
+        user_id: session.user.id,
+        rating: newRating,
+        comment: newComment,
+      });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reviews", id] });
+      toast.success("Avaliação enviada com sucesso!");
+      setNewComment("");
+    },
+    onError: (error: any) => {
+      if (error.code === "23505") {
+        toast.error("Você já avaliou este produto.");
+      } else {
+        toast.error(error.message || "Erro ao enviar avaliação.");
+      }
+    },
+  });
 
   const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
 
@@ -131,12 +194,8 @@ function ProductPage() {
             <p className="text-xs tracking-[0.3em] text-primary font-bold mb-3">{product.category.toUpperCase()}</p>
             <h1 className="text-3xl md:text-4xl font-black mb-4 leading-tight">{product.name}</h1>
             <div className="flex items-center gap-3 text-sm">
-              <div className="flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className={`h-4 w-4 ${i < Math.floor(product.rating) ? "fill-primary text-primary" : "text-muted-foreground/40"}`} />
-                ))}
-              </div>
-              <span className="text-muted-foreground">{product.rating} · {product.reviews} avaliações</span>
+              <StarRating rating={Number(ratingStats.average)} readonly size="sm" />
+              <span className="text-muted-foreground">{ratingStats.average} · {ratingStats.count} avaliações</span>
             </div>
           </div>
 
@@ -200,6 +259,86 @@ function ProductPage() {
           </div>
         </div>
       </div>
+
+      {/* SEÇÃO DE AVALIAÇÕES */}
+      <section className="mt-24 border-t border-border pt-16">
+        <div className="grid lg:grid-cols-3 gap-12">
+          <div className="space-y-6">
+            <h2 className="text-2xl font-black">Avaliações de Clientes</h2>
+            <div className="flex items-center gap-4">
+              <span className="text-5xl font-black">{ratingStats.average}</span>
+              <div>
+                <StarRating rating={Number(ratingStats.average)} readonly size="md" />
+                <p className="text-sm text-muted-foreground">Com base em {ratingStats.count} avaliações</p>
+              </div>
+            </div>
+
+            {session ? (
+              <div className="p-6 rounded-xl border border-border bg-card/40 space-y-4">
+                <h3 className="font-bold">Deixe sua avaliação</h3>
+                <StarRating rating={newRating} onRatingChange={setNewRating} size="lg" />
+                <textarea
+                  placeholder="O que você achou do produto?"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  className="w-full h-32 bg-background/50 border border-border rounded-md p-4 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all resize-none"
+                />
+                <button
+                  onClick={() => mutation.mutate()}
+                  disabled={mutation.isPending}
+                  className="w-full h-11 bg-primary text-primary-foreground font-bold rounded-md flex items-center justify-center gap-2 hover:opacity-90 transition-all disabled:opacity-50"
+                >
+                  {mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  PUBLICAR AVALIAÇÃO
+                </button>
+              </div>
+            ) : (
+              <div className="p-6 rounded-xl border border-border bg-card/40 text-center space-y-3">
+                <p className="text-sm text-muted-foreground">Você precisa estar logado para avaliar.</p>
+                <Link to="/login" className="text-primary font-bold hover:underline">Fazer Login →</Link>
+              </div>
+            )}
+          </div>
+
+          <div className="lg:col-span-2 space-y-8">
+            {isLoadingReviews ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : reviews.length > 0 ? (
+              <div className="grid gap-6">
+                {reviews.map((r: any) => (
+                  <div key={r.id} className="p-6 rounded-xl border border-border bg-card/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/20 overflow-hidden border border-border">
+                          {r.profiles?.avatar_url ? (
+                            <img src={r.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center text-[10px] font-bold">
+                              {r.profiles?.display_name?.charAt(0) || "U"}
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold">{r.profiles?.display_name || "Usuário"}</p>
+                          <p className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</p>
+                        </div>
+                      </div>
+                      <StarRating rating={r.rating} readonly size="sm" />
+                    </div>
+                    {r.comment && <p className="text-sm text-foreground/80 leading-relaxed italic">"{r.comment}"</p>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 border border-dashed border-border rounded-xl">
+                <p className="text-muted-foreground">Este produto ainda não possui avaliações.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       {related.length > 0 && (
         <section className="mt-24">
