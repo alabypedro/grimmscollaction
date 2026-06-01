@@ -140,6 +140,26 @@ export function Header() {
                 </span>
               )}
             </button>
+            {session ? (
+              <Link
+                to="/auth/perfil"
+                className="h-10 w-10 grid place-items-center rounded-md hover:bg-secondary transition-colors"
+              >
+                <Avatar className={`h-8 w-8 border-2 transition-all ${pathname === "/auth/perfil" ? "border-primary" : "border-transparent group-hover:border-border"}`}>
+                  <AvatarImage src={profileData?.avatar_url} alt={profileData?.full_name || "Perfil"} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                    {profileData?.full_name?.charAt(0) || profileData?.username?.charAt(0) || <User className="h-4 w-4" />}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+            ) : (
+              <Link
+                to="/auth/login"
+                className={`h-10 w-10 grid place-items-center rounded-md hover:bg-secondary transition-colors ${pathname === "/auth/login" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <User className="h-5 w-5" />
+              </Link>
+            )}
             <button
               onClick={() => setMobile((m) => !m)}
               aria-label="Menu"
