@@ -262,51 +262,40 @@ function PerfilPage() {
           </div>
           
           <div className="space-y-4 pt-4 border-t border-white/5">
-            <div className="space-y-2">
-              <Label htmlFor="email">Alterar Email de Login</Label>
-              <div className="flex flex-col md:flex-row gap-3">
-                <div className="relative flex-1">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="novo@email.com"
-                    className="pl-10 bg-background/50 h-11"
-                  />
-                </div>
+            <div className="space-y-4">
+              <Label>Segurança da Conta</Label>
+              
+              <div className="space-y-2">
                 <Button 
                   type="button" 
+                  variant="outline"
                   onClick={handleRequestEmailChange}
                   disabled={isSendingEmailLink}
-                  className="h-11 px-6 font-bold uppercase tracking-wider text-xs whitespace-nowrap"
+                  className="w-full h-11 font-bold uppercase tracking-wider text-xs border-primary/20 hover:bg-primary/10"
                 >
-                  {isSendingEmailLink ? <Loader2 className="h-4 w-4 animate-spin" /> : "Solicitar Troca de Email"}
+                  {isSendingEmailLink ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+                  Solicitar Alteração de E-mail por E-mail
                 </Button>
+                <p className="text-[10px] text-muted-foreground text-center uppercase font-bold tracking-widest">
+                  ATUAL: {userActualEmail}
+                </p>
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest px-1">
-                ATUAL: {userActualEmail}
-              </p>
-            </div>
-          </div>
 
-          <div className="space-y-4 pt-4 border-t border-white/5">
-            <div className="space-y-2">
-              <Label>Segurança da Conta</Label>
-              <Button 
-                type="button" 
-                variant="outline"
-                onClick={handleRequestPasswordReset}
-                disabled={isSendingPasswordLink}
-                className="w-full h-11 font-bold uppercase tracking-wider text-xs border-primary/20 hover:bg-primary/10"
-              >
-                {isSendingPasswordLink ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
-                Solicitar Redefinição de Senha por E-mail
-              </Button>
-              <p className="text-[10px] text-muted-foreground text-center uppercase font-bold tracking-widest">
-                Enviaremos um link seguro para o seu e-mail cadastrado
-              </p>
+              <div className="space-y-2">
+                <Button 
+                  type="button" 
+                  variant="outline"
+                  onClick={handleRequestPasswordReset}
+                  disabled={isSendingPasswordLink}
+                  className="w-full h-11 font-bold uppercase tracking-wider text-xs border-primary/20 hover:bg-primary/10"
+                >
+                  {isSendingPasswordLink ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
+                  Solicitar Redefinição de Senha por E-mail
+                </Button>
+                <p className="text-[10px] text-muted-foreground text-center uppercase font-bold tracking-widest">
+                  Enviaremos um link seguro para o seu e-mail cadastrado
+                </p>
+              </div>
             </div>
           </div>
 
