@@ -116,7 +116,7 @@ function ProductPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("reviews")
-        .select("*, profiles(display_name, avatar_url)")
+        .select("*, profiles(username, full_name, avatar_url)")
         .eq("product_id", id)
         .order("created_at", { ascending: false });
 
@@ -316,12 +316,12 @@ function ProductPage() {
                             <img src={r.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center text-[10px] font-bold">
-                              {r.profiles?.display_name?.charAt(0) || "U"}
+                              {r.profiles?.full_name?.charAt(0) || r.profiles?.username?.charAt(0) || "U"}
                             </div>
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-bold">{r.profiles?.display_name || "Usuário"}</p>
+                          <p className="text-sm font-bold">{r.profiles?.full_name || r.profiles?.username || "Usuário"}</p>
                           <p className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString("pt-BR")}</p>
                         </div>
                       </div>
