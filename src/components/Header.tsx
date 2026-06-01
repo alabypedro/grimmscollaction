@@ -199,23 +199,6 @@ export function Header() {
                 {n.label}
               </Link>
             ))}
-            {session ? (
-              <Link
-                to="/auth/perfil"
-                onClick={() => setMobile(false)}
-                className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/auth/perfil" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
-              >
-                Perfil
-              </Link>
-            ) : (
-              <Link
-                to="/auth/login"
-                onClick={() => setMobile(false)}
-                className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/auth/login" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
-              >
-                Entrar
-              </Link>
-            )}
             {isAdmin && (
               <Link
                 to="/admin"
