@@ -34,6 +34,10 @@ function AdminPage() {
   const navigate = useNavigate();
   const [session, setSession] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
+  const [isAdmin, setIsAdmin] = React.useState(false);
+  const [adminUsers, setAdminUsers] = React.useState<any[]>([]);
+  const [newAdminEmail, setNewAdminEmail] = React.useState('');
+  const [isManagingAdmins, setIsManagingAdmins] = React.useState(false);
 
   React.useEffect(() => {
     const checkSession = async () => {
@@ -42,12 +46,76 @@ function AdminPage() {
         navigate({ to: '/auth/login', search: { redirect: window.location.href } });
       } else {
         setSession(session);
+        // Check if user is admin
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (error || !profile?.is_admin) {
+          toast.error('Acesso negado. Apenas administradores podem acessar esta página.');
+          navigate({ to: '/' });
+          return;
+        }
+        setIsAdmin(true);
+        fetchAdminUsers();
       }
       setLoading(false);
     };
 
     checkSession();
   }, [navigate]);
+
+  const fetchAdminUsers = async () => {
+    const { data, error } = await supabase.rpc('get_admin_users');
+    if (!error) {
+      setAdminUsers(data);
+    }
+  };
+
+  const handleAddAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminEmail) return;
+
+    try {
+      const { error } = await supabase.rpc('set_admin_by_email', {
+        user_email: newAdminEmail,
+        admin_status: true
+      });
+
+      if (error) throw error;
+
+      toast.success(`${newAdminEmail} agora é um administrador!`);
+      setNewAdminEmail('');
+      fetchAdminUsers();
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao adicionar administrador');
+    }
+  };
+
+  const handleRemoveAdmin = async (email: string) => {
+    if (email === session?.user?.email) {
+      toast.error('Você não pode remover a si mesmo como administrador.');
+      return;
+    }
+
+    if (confirm(`Tem certeza que deseja remover as permissões de admin de ${email}?`)) {
+      try {
+        const { error } = await supabase.rpc('set_admin_by_email', {
+          user_email: email,
+          admin_status: false
+        });
+
+        if (error) throw error;
+
+        toast.success(`Permissões de ${email} removidas.`);
+        fetchAdminUsers();
+      } catch (error: any) {
+        toast.error(error.message || 'Erro ao remover administrador');
+      }
+    }
+  };
 
   const { products, addProduct, updateProduct, deleteProduct, categories, addCategory, deleteCategory } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
