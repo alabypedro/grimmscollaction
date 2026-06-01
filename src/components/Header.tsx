@@ -23,6 +23,7 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(!!searchParams.search);
   const [searchValue, setSearchValue] = useState(searchParams.search || "");
   const [session, setSession] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const searchInputRef = useRef<HTMLInputElement>(null);
 
