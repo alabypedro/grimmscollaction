@@ -78,6 +78,7 @@ function AuthPage() {
     } catch (err: any) {
       if (err.message === "User already registered" || err.code === "user_already_exists") {
         toast.error("Já existe uma conta com este e-mail. Tente fazer login.");
+        setIsSignUp(false);
       } else {
         toast.error(err.message || "Erro na autenticação.");
       }
