@@ -109,18 +109,19 @@ export type Database = {
       }
     }
     Views: {
-      admin_profiles: {
-        Row: {
-          email: string | null
-          full_name: string | null
-          id: string | null
-          is_admin: boolean | null
-          username: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_admin_users: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          is_admin: boolean
+          username: string
+        }[]
+      }
       set_admin_by_email: {
         Args: { admin_status: boolean; user_email: string }
         Returns: undefined
