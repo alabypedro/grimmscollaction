@@ -109,7 +109,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      admin_profiles: {
+        Row: {
+          email: string | null
+          full_name: string | null
+          id: string | null
+          is_admin: boolean | null
+          username: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       set_admin_by_email: {
