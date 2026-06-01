@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Lock, Loader2, CheckCircle2 } from "lucide-react";
+import { Lock, Loader2, CheckCircle2, Check, X } from "lucide-react";
 
 export const Route = createFileRoute("/auth/recovery")({
   component: RecoveryPage,
@@ -109,6 +109,26 @@ function RecoveryPage() {
                   required
                 />
               </div>
+              <ul className="mt-3 space-y-1.5 text-[10px] uppercase font-bold tracking-wider">
+                {[
+                  { ok: password.length >= 8 && password.length <= 70, label: "8 a 70 caracteres" },
+                  { ok: /[a-z]/.test(password), label: "Letra minúscula" },
+                  { ok: /[A-Z]/.test(password), label: "Letra maiúscula" },
+                  { ok: /[0-9]/.test(password), label: "Número" },
+                  { ok: /[^A-Za-z0-9]/.test(password), label: "Símbolo (Ex: !@#$%)" },
+                ].map((r) => (
+                  <li key={r.label} className="flex items-center gap-2">
+                    {r.ok ? (
+                      <Check className="h-3.5 w-3.5 text-primary" />
+                    ) : (
+                      <X className="h-3.5 w-3.5 text-muted-foreground/30" />
+                    )}
+                    <span className={r.ok ? "text-foreground" : "text-muted-foreground/50"}>
+                      {r.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
 
             <div className="space-y-2">
