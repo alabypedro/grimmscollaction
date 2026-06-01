@@ -36,19 +36,16 @@ function RecoveryPage() {
       return;
     }
 
-    if (password.length < 6) {
-      toast.error("A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
+    const passwordChecks = {
+      length: password.length >= 8 && password.length <= 70,
+      lower: /[a-z]/.test(password),
+      upper: /[A-Z]/.test(password),
+      number: /[0-9]/.test(password),
+      symbol: /[^A-Za-z0-9]/.test(password),
+    };
 
-    // Password criteria check
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
-      toast.error("A senha deve conter letras maiúsculas, minúsculas, números e caracteres especiais.");
+    if (!Object.values(passwordChecks).every(Boolean)) {
+      toast.error("A senha deve ter entre 8 e 70 caracteres e conter letras maiúsculas, minúsculas, números e símbolos.");
       return;
     }
 
