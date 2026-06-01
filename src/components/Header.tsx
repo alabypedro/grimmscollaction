@@ -120,13 +120,15 @@ export function Header() {
                 <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/auth/login" ? "w-full" : "w-0 group-hover:w-full"}`} />
               </Link>
             )}
-            <Link
-              to="/admin"
-              className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/admin" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Admin
-              <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/admin" ? "w-full" : "w-0 group-hover:w-full"}`} />
-            </Link>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/admin" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Admin
+                <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/admin" ? "w-full" : "w-0 group-hover:w-full"}`} />
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-1">
