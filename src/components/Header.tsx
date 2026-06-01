@@ -207,13 +207,15 @@ export function Header() {
                 Entrar
               </Link>
             )}
-            <Link
-              to="/admin"
-              onClick={() => setMobile(false)}
-              className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/admin" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
-            >
-              Admin
-            </Link>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setMobile(false)}
+                className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/admin" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
         )}
       </div>
