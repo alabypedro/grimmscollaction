@@ -40,9 +40,11 @@ function PerfilPage() {
         return;
       }
 
+      setEmail(user.email || "");
+
       const { data, error, status } = await supabase
         .from("profiles")
-        .select(`username, full_name, avatar_url, website`)
+        .select(`username, full_name, avatar_url`)
         .eq("id", user.id)
         .single();
 
@@ -55,8 +57,6 @@ function PerfilPage() {
           username: data.username || "",
           full_name: data.full_name || "",
           avatar_url: data.avatar_url || "",
-          website: data.website || "",
-          
         });
       }
     } catch (error: any) {
@@ -74,15 +74,37 @@ function PerfilPage() {
 
       if (!user) throw new Error("Sem usuário logado");
 
-      const updates = {
+      // 1. Update Profile Table
+      const { error: profileError } = await supabase.from("profiles").upsert({
         id: user.id,
         ...profile,
         updated_at: new Date().toISOString(),
-      };
+      });
 
-      const { error } = await supabase.from("profiles").upsert(updates);
+      if (profileError) throw profileError;
 
-      if (error) throw error;
+      // 2. Update Email if changed
+      if (email !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({ email });
+        if (emailError) throw emailError;
+        toast.info("Confirme a alteração no seu novo email.");
+      }
+
+      // 3. Update Password if provided
+      if (newPassword) {
+        if (newPassword !== confirmPassword) {
+          throw new Error("As senhas não coincidem.");
+        }
+        if (newPassword.length < 6) {
+          throw new Error("A senha deve ter pelo menos 6 caracteres.");
+        }
+        const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+        if (passwordError) throw passwordError;
+        setNewPassword("");
+        setConfirmPassword("");
+        toast.success("Senha atualizada!");
+      }
+
       toast.success("Perfil atualizado com sucesso!");
     } catch (error: any) {
       toast.error("Erro ao atualizar: " + error.message);
