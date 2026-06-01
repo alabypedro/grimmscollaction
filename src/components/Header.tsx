@@ -44,12 +44,14 @@ export function Header() {
       if (session) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('is_admin')
+          .select('is_admin, avatar_url, full_name, username')
           .eq('id', session.user.id)
           .single();
         setIsAdmin(!!profile?.is_admin);
+        setProfileData(profile);
       } else {
         setIsAdmin(false);
+        setProfileData(null);
       }
     };
 
@@ -62,12 +64,14 @@ export function Header() {
       if (session) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('is_admin')
+          .select('is_admin, avatar_url, full_name, username')
           .eq('id', session.user.id)
           .single();
         setIsAdmin(!!profile?.is_admin);
+        setProfileData(profile);
       } else {
         setIsAdmin(false);
+        setProfileData(null);
       }
     });
 
