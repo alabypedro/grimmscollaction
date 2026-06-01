@@ -29,6 +29,7 @@ export const Route = createFileRoute("/loja")({
 
 function LojaPage() {
   const { products, categories: dynamicCategories } = useAdminStore();
+  const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const [cat, setCat] = useState<string>(search.category || "Todas");
   const [mat, setMat] = useState<Material | "Todos">("Todos");
@@ -61,8 +62,14 @@ function LojaPage() {
     <div className="container mx-auto px-4 lg:px-8 py-12 lg:py-16">
       <div className="mb-10">
         <p className="text-xs tracking-[0.3em] text-primary font-bold mb-2">CATÁLOGO COMPLETO</p>
-        <h1 className="text-4xl md:text-5xl font-black">Loja</h1>
-        <p className="text-muted-foreground mt-2">Todos os drops, edições limitadas e clássicos.</p>
+        <h1 className="text-4xl md:text-5xl font-black">
+          {search.search ? `Resultados para "${search.search}"` : "Loja"}
+        </h1>
+        <p className="text-muted-foreground mt-2">
+          {search.search 
+            ? `Encontramos ${filtered.length} produto${filtered.length !== 1 ? "s" : ""} para sua busca.` 
+            : "Todos os drops, edições limitadas e clássicos."}
+        </p>
       </div>
 
       <div className="grid lg:grid-cols-[260px_1fr] gap-10">
@@ -120,11 +127,21 @@ function LojaPage() {
 
         {/* GRID */}
         <div>
-          <h2 className="sr-only">Produtos encontrados</h2>
-          <p className="text-sm text-muted-foreground mb-6">{filtered.length} produto{filtered.length !== 1 && "s"}</p>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="sr-only">Produtos encontrados</h2>
+            <p className="text-sm text-muted-foreground">{filtered.length} produto{filtered.length !== 1 && "s"}</p>
+            {search.search && (
+              <button 
+                onClick={() => navigate({ to: "/loja", search: { category: cat } })}
+                className="text-xs font-bold text-primary hover:underline"
+              >
+                LIMPAR PESQUISA
+              </button>
+            )}
+          </div>
           {filtered.length === 0 ? (
             <div className="text-center py-20 border border-dashed border-border rounded-lg">
-              <p className="text-muted-foreground">Nenhum produto encontrado com esses filtros.</p>
+              <p className="text-muted-foreground">Nenhum produto encontrado para "{search.search}".</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
