@@ -18,7 +18,10 @@ import {
   Package,
   Layers,
   Palette,
-  Layout
+  Layout,
+  Users,
+  ShieldCheck,
+  UserPlus
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -31,6 +34,10 @@ function AdminPage() {
   const navigate = useNavigate();
   const [session, setSession] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
+  const [isAdmin, setIsAdmin] = React.useState(false);
+  const [adminUsers, setAdminUsers] = React.useState<any[]>([]);
+  const [newAdminEmail, setNewAdminEmail] = React.useState('');
+  const [isManagingAdmins, setIsManagingAdmins] = React.useState(false);
 
   React.useEffect(() => {
     const checkSession = async () => {
@@ -39,12 +46,76 @@ function AdminPage() {
         navigate({ to: '/auth/login', search: { redirect: window.location.href } });
       } else {
         setSession(session);
+        // Check if user is admin
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (error || !profile?.is_admin) {
+          toast.error('Acesso negado. Apenas administradores podem acessar esta página.');
+          navigate({ to: '/' });
+          return;
+        }
+        setIsAdmin(true);
+        fetchAdminUsers();
       }
       setLoading(false);
     };
 
     checkSession();
   }, [navigate]);
+
+  const fetchAdminUsers = async () => {
+    const { data, error } = await supabase.rpc('get_admin_users');
+    if (!error) {
+      setAdminUsers(data);
+    }
+  };
+
+  const handleAddAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdminEmail) return;
+
+    try {
+      const { error } = await supabase.rpc('set_admin_by_email', {
+        user_email: newAdminEmail,
+        admin_status: true
+      });
+
+      if (error) throw error;
+
+      toast.success(`${newAdminEmail} agora é um administrador!`);
+      setNewAdminEmail('');
+      fetchAdminUsers();
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao adicionar administrador');
+    }
+  };
+
+  const handleRemoveAdmin = async (email: string) => {
+    if (email === session?.user?.email) {
+      toast.error('Você não pode remover a si mesmo como administrador.');
+      return;
+    }
+
+    if (confirm(`Tem certeza que deseja remover as permissões de admin de ${email}?`)) {
+      try {
+        const { error } = await supabase.rpc('set_admin_by_email', {
+          user_email: email,
+          admin_status: false
+        });
+
+        if (error) throw error;
+
+        toast.success(`Permissões de ${email} removidas.`);
+        fetchAdminUsers();
+      } catch (error: any) {
+        toast.error(error.message || 'Erro ao remover administrador');
+      }
+    }
+  };
 
   const { products, addProduct, updateProduct, deleteProduct, categories, addCategory, deleteCategory } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
@@ -89,19 +160,117 @@ function AdminPage() {
         <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-purple-400 bg-clip-text text-transparent">
-              Painel Administrativo
+              {isManagingAdmins ? 'Gerenciar Administradores' : 'Painel Administrativo'}
             </h1>
-            <p className="text-zinc-400 mt-1">Gerencie seu catálogo de produtos premium</p>
+            <p className="text-zinc-400 mt-1">
+              {isManagingAdmins ? 'Controle quem tem acesso ao painel de controle' : 'Gerencie seu catálogo de produtos premium'}
+            </p>
           </div>
-          <Button 
-            onClick={handleAddNew}
-            className="bg-[#8B00FF] hover:bg-[#7000CC] text-white gap-2 shadow-[0_0_15px_rgba(139,0,255,0.3)] transition-all"
-          >
-            <Plus className="w-4 h-4" /> Novo Produto
-          </Button>
+          <div className="flex gap-3">
+            <Button 
+              variant="outline"
+              onClick={() => setIsManagingAdmins(!isManagingAdmins)}
+              className="bg-black/40 border-white/10 text-white hover:bg-white/5 gap-2"
+            >
+              {isManagingAdmins ? (
+                <>
+                  <Package className="w-4 h-4" /> Ver Produtos
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="w-4 h-4" /> Gerenciar Admins
+                </>
+              )}
+            </Button>
+            {!isManagingAdmins && (
+              <Button 
+                onClick={handleAddNew}
+                className="bg-[#8B00FF] hover:bg-[#7000CC] text-white gap-2 shadow-[0_0_15px_rgba(139,0,255,0.3)] transition-all"
+              >
+                <Plus className="w-4 h-4" /> Novo Produto
+              </Button>
+            )}
+          </div>
         </header>
 
-        {/* Search and Filters */}
+        {isManagingAdmins ? (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Add Admin Form */}
+            <div className="bg-[#111111] border border-white/5 rounded-2xl p-6">
+              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-purple-400" /> Adicionar Novo Administrador
+              </h3>
+              <form onSubmit={handleAddAdmin} className="flex flex-col md:flex-row gap-4 items-end">
+                <div className="flex-1 space-y-2 w-full">
+                  <Label htmlFor="admin-email" className="text-zinc-400">Email do Usuário</Label>
+                  <Input 
+                    id="admin-email"
+                    type="email"
+                    placeholder="exemplo@email.com"
+                    className="bg-black/40 border-white/10 h-12 text-white placeholder:text-zinc-600 focus-visible:ring-[#8B00FF]/50"
+                    value={newAdminEmail}
+                    onChange={(e) => setNewAdminEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <Button 
+                  type="submit"
+                  className="bg-[#8B00FF] hover:bg-[#7000CC] text-white h-12 px-8 shadow-[0_0_15px_rgba(139,0,255,0.2)]"
+                >
+                  Tornar Admin
+                </Button>
+              </form>
+              <p className="text-xs text-zinc-500 mt-3">
+                O usuário deve ter uma conta criada no sistema antes de ser promovido a administrador.
+              </p>
+            </div>
+
+            {/* Admins List */}
+            <div className="bg-[#111111] border border-white/5 rounded-2xl overflow-hidden overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-white/5 text-zinc-400 text-xs uppercase tracking-wider font-semibold border-b border-white/5">
+                    <th className="px-6 py-4">Administrador</th>
+                    <th className="px-6 py-4">Email</th>
+                    <th className="px-6 py-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {adminUsers.map((admin) => (
+                    <tr key={admin.id} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                            <Users className="w-5 h-5 text-purple-400" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-white">{admin.full_name || admin.username || 'Sem nome'}</p>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-green-500/10 text-green-400 border border-green-500/20">Ativo</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-zinc-400">{admin.email}</td>
+                      <td className="px-6 py-4 text-right">
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-8 w-8 text-zinc-400 hover:text-red-500 hover:bg-red-500/10"
+                          onClick={() => handleRemoveAdmin(admin.email)}
+                          disabled={admin.email === session?.user?.email}
+                          title={admin.email === session?.user?.email ? "Você não pode remover a si mesmo" : "Remover acesso admin"}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Search and Filters */}
         <div className="bg-[#111111] border border-white/5 rounded-2xl p-4 mb-8 flex flex-col md:flex-row gap-4 items-center">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
@@ -188,7 +357,9 @@ function AdminPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
 
       {/* Product Form Drawer/Modal Overlay */}
       {isFormOpen && (

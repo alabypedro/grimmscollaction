@@ -49,6 +49,7 @@ export type Database = {
           avatar_url: string | null
           full_name: string | null
           id: string
+          is_admin: boolean | null
           phone: string | null
           updated_at: string | null
           username: string | null
@@ -58,6 +59,7 @@ export type Database = {
           avatar_url?: string | null
           full_name?: string | null
           id: string
+          is_admin?: boolean | null
           phone?: string | null
           updated_at?: string | null
           username?: string | null
@@ -67,6 +69,7 @@ export type Database = {
           avatar_url?: string | null
           full_name?: string | null
           id?: string
+          is_admin?: boolean | null
           phone?: string | null
           updated_at?: string | null
           username?: string | null
@@ -109,7 +112,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_admin_users: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          is_admin: boolean
+          username: string
+        }[]
+      }
+      set_admin_by_email: {
+        Args: { admin_status: boolean; user_email: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
