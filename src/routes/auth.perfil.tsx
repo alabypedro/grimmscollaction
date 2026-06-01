@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User, Camera, Save, LogOut, Loader2, Mail, Lock, ShieldCheck } from "lucide-react";
+import { User, Camera, Save, LogOut, Loader2, Mail, Lock, ShieldCheck, Check, X } from "lucide-react";
 
 export const Route = createFileRoute("/auth/perfil")({
   component: PerfilPage,
