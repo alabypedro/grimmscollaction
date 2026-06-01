@@ -23,6 +23,7 @@ export function Header() {
   const [searchOpen, setSearchOpen] = useState(!!searchParams.search);
   const [searchValue, setSearchValue] = useState(searchParams.search || "");
   const [session, setSession] = useState<any>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -34,14 +35,38 @@ export function Header() {
   }, [searchParams.search]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
-    });
+      
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        setIsAdmin(!!profile?.is_admin);
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    checkUser();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
+      if (session) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        setIsAdmin(!!profile?.is_admin);
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -95,13 +120,15 @@ export function Header() {
                 <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/auth/login" ? "w-full" : "w-0 group-hover:w-full"}`} />
               </Link>
             )}
-            <Link
-              to="/admin"
-              className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/admin" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-            >
-              Admin
-              <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/admin" ? "w-full" : "w-0 group-hover:w-full"}`} />
-            </Link>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/admin" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                Admin
+                <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/admin" ? "w-full" : "w-0 group-hover:w-full"}`} />
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-1">
@@ -180,13 +207,15 @@ export function Header() {
                 Entrar
               </Link>
             )}
-            <Link
-              to="/admin"
-              onClick={() => setMobile(false)}
-              className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/admin" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
-            >
-              Admin
-            </Link>
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setMobile(false)}
+                className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/admin" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
         )}
       </div>
