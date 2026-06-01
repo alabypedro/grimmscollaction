@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Logo } from "./Logo";
 import { useCart } from "@/lib/cart";
 import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -24,6 +25,7 @@ export function Header() {
   const [searchValue, setSearchValue] = useState(searchParams.search || "");
   const [session, setSession] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -42,12 +44,14 @@ export function Header() {
       if (session) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('is_admin')
+          .select('is_admin, avatar_url, full_name, username')
           .eq('id', session.user.id)
           .single();
         setIsAdmin(!!profile?.is_admin);
+        setProfileData(profile);
       } else {
         setIsAdmin(false);
+        setProfileData(null);
       }
     };
 
@@ -60,12 +64,14 @@ export function Header() {
       if (session) {
         const { data: profile } = await supabase
           .from('profiles')
-          .select('is_admin')
+          .select('is_admin, avatar_url, full_name, username')
           .eq('id', session.user.id)
           .single();
         setIsAdmin(!!profile?.is_admin);
+        setProfileData(profile);
       } else {
         setIsAdmin(false);
+        setProfileData(null);
       }
     });
 
@@ -103,23 +109,6 @@ export function Header() {
                 <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === n.to ? "w-full" : "w-0 group-hover:w-full"}`} />
               </Link>
             ))}
-            {session ? (
-              <Link
-                to="/auth/perfil"
-                className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/auth/perfil" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                Perfil
-                <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/auth/perfil" ? "w-full" : "w-0 group-hover:w-full"}`} />
-              </Link>
-            ) : (
-              <Link
-                to="/auth/login"
-                className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/auth/login" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                Entrar
-                <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/auth/login" ? "w-full" : "w-0 group-hover:w-full"}`} />
-              </Link>
-            )}
             {isAdmin && (
               <Link
                 to="/admin"
@@ -151,6 +140,26 @@ export function Header() {
                 </span>
               )}
             </button>
+            {session ? (
+              <Link
+                to="/auth/perfil"
+                className="h-10 w-10 grid place-items-center rounded-md hover:bg-secondary transition-colors"
+              >
+                <Avatar className={`h-8 w-8 border-2 transition-all ${pathname === "/auth/perfil" ? "border-primary" : "border-transparent group-hover:border-border"}`}>
+                  <AvatarImage src={profileData?.avatar_url} alt={profileData?.full_name || "Perfil"} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                    {profileData?.full_name?.charAt(0) || profileData?.username?.charAt(0) || <User className="h-4 w-4" />}
+                  </AvatarFallback>
+                </Avatar>
+              </Link>
+            ) : (
+              <Link
+                to="/auth/login"
+                className={`h-10 w-10 grid place-items-center rounded-md hover:bg-secondary transition-colors ${pathname === "/auth/login" ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}
+              >
+                <User className="h-5 w-5" />
+              </Link>
+            )}
             <button
               onClick={() => setMobile((m) => !m)}
               aria-label="Menu"
@@ -190,23 +199,6 @@ export function Header() {
                 {n.label}
               </Link>
             ))}
-            {session ? (
-              <Link
-                to="/auth/perfil"
-                onClick={() => setMobile(false)}
-                className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/auth/perfil" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
-              >
-                Perfil
-              </Link>
-            ) : (
-              <Link
-                to="/auth/login"
-                onClick={() => setMobile(false)}
-                className={`px-4 py-3 rounded-md text-sm font-medium ${pathname === "/auth/login" ? "bg-secondary text-foreground" : "text-muted-foreground hover:bg-secondary/60"}`}
-              >
-                Entrar
-              </Link>
-            )}
             {isAdmin && (
               <Link
                 to="/admin"
