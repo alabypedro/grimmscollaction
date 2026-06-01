@@ -1,6 +1,6 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { Search, ShoppingBag, Menu, X, User } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Logo } from "./Logo";
 import { useCart } from "@/lib/cart";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,10 +15,23 @@ const NAV = [
 
 export function Header() {
   const { count, setOpen } = useCart();
+  const navigate = useNavigate();
+  const routerState = useRouterState();
+  const searchParams = (routerState.location.search as any) || {};
+  
   const [mobile, setMobile] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(!!searchParams.search);
+  const [searchValue, setSearchValue] = useState(searchParams.search || "");
   const [session, setSession] = useState<any>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchParams.search) {
+      setSearchValue(searchParams.search);
+      setSearchOpen(true);
+    }
+  }, [searchParams.search]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -33,6 +46,18 @@ export function Header() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchValue.trim()) {
+      navigate({
+        to: "/loja",
+        search: { search: searchValue.trim() },
+      });
+      setSearchOpen(false);
+      setSearchValue("");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/70 border-b border-border">
@@ -111,15 +136,18 @@ export function Header() {
 
         {searchOpen && (
           <div className="pb-4 animate-fade-in">
-            <div className="relative">
+            <form onSubmit={handleSearch} className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
+                ref={searchInputRef}
                 autoFocus
                 aria-label="Buscar produtos"
                 placeholder="Buscar produtos, miniaturas, cosplay..."
+                value={searchValue}
+                onChange={(e) => setSearchValue(e.target.value)}
                 className="w-full h-11 bg-input border border-border rounded-md pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
               />
-            </div>
+            </form>
           </div>
         )}
 
