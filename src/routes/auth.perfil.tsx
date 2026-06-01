@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User, Camera, Save, LogOut, Globe, Loader2 } from "lucide-react";
+import { User, Camera, Save, LogOut, Loader2, Mail, Lock, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth/perfil")({
   component: PerfilPage,
@@ -14,11 +14,13 @@ export const Route = createFileRoute("/auth/perfil")({
 function PerfilPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [profile, setProfile] = useState({
     username: "",
     full_name: "",
     avatar_url: "",
-    website: "",
   });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -38,9 +40,11 @@ function PerfilPage() {
         return;
       }
 
+      setEmail(user.email || "");
+
       const { data, error, status } = await supabase
         .from("profiles")
-        .select(`username, full_name, avatar_url, website`)
+        .select(`username, full_name, avatar_url`)
         .eq("id", user.id)
         .single();
 
@@ -53,8 +57,6 @@ function PerfilPage() {
           username: data.username || "",
           full_name: data.full_name || "",
           avatar_url: data.avatar_url || "",
-          website: data.website || "",
-          
         });
       }
     } catch (error: any) {
@@ -72,15 +74,37 @@ function PerfilPage() {
 
       if (!user) throw new Error("Sem usuário logado");
 
-      const updates = {
+      // 1. Update Profile Table
+      const { error: profileError } = await supabase.from("profiles").upsert({
         id: user.id,
         ...profile,
         updated_at: new Date().toISOString(),
-      };
+      });
 
-      const { error } = await supabase.from("profiles").upsert(updates);
+      if (profileError) throw profileError;
 
-      if (error) throw error;
+      // 2. Update Email if changed
+      if (email !== user.email) {
+        const { error: emailError } = await supabase.auth.updateUser({ email });
+        if (emailError) throw emailError;
+        toast.info("Confirme a alteração no seu novo email.");
+      }
+
+      // 3. Update Password if provided
+      if (newPassword) {
+        if (newPassword !== confirmPassword) {
+          throw new Error("As senhas não coincidem.");
+        }
+        if (newPassword.length < 6) {
+          throw new Error("A senha deve ter pelo menos 6 caracteres.");
+        }
+        const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
+        if (passwordError) throw passwordError;
+        setNewPassword("");
+        setConfirmPassword("");
+        toast.success("Senha atualizada!");
+      }
+
       toast.success("Perfil atualizado com sucesso!");
     } catch (error: any) {
       toast.error("Erro ao atualizar: " + error.message);
@@ -209,44 +233,50 @@ function PerfilPage() {
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="email">Email de Login</Label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seu@email.com"
+                className="pl-10 bg-background/50 h-11"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
             <div className="space-y-2">
-              <Label htmlFor="website">Website</Label>
+              <Label htmlFor="new-password">Nova Senha (opcional)</Label>
               <div className="relative">
-                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="website"
-                  value={profile.website}
-                  onChange={(e) => setProfile({ ...profile, website: e.target.value })}
-                  placeholder="https://..."
+                  id="new-password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
                   className="pl-10 bg-background/50 h-11"
                 />
               </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="avatar">URL do Avatar</Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Camera className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+              <div className="relative">
+                <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="avatar"
-                  value={profile.avatar_url}
-                  onChange={(e) => setProfile({ ...profile, avatar_url: e.target.value })}
-                  placeholder="https://..."
+                  id="confirm-password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
                   className="pl-10 bg-background/50 h-11"
                 />
               </div>
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="h-11"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-              >
-                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-              </Button>
             </div>
           </div>
 
