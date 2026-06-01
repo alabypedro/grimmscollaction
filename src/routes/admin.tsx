@@ -357,7 +357,9 @@ function AdminPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </>
+    )}
+  </div>
 
       {/* Product Form Drawer/Modal Overlay */}
       {isFormOpen && (
