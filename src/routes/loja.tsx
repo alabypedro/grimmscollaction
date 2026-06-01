@@ -44,9 +44,13 @@ function LojaPage() {
       
       // Filtro de pesquisa
       if (search.search) {
-        const searchTerm = search.search.toLowerCase();
-        const matchesName = p.name.toLowerCase().includes(searchTerm);
-        const matchesCategory = p.category.toLowerCase().includes(searchTerm);
+        const searchTerm = search.search.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const nameNormalized = p.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const categoryNormalized = p.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        
+        const matchesName = nameNormalized.includes(searchTerm);
+        const matchesCategory = categoryNormalized.includes(searchTerm);
+        
         if (!matchesName && !matchesCategory) return false;
       }
       
