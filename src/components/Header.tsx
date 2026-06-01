@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Logo } from "./Logo";
 import { useCart } from "@/lib/cart";
 import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const NAV = [
   { to: "/", label: "Home" },
