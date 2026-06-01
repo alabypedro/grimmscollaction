@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User, Camera, Save, LogOut, Loader2, Mail, Lock, ShieldCheck, Check, X } from "lucide-react";
+import { User, Camera, Save, LogOut, Loader2, Mail, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/auth/perfil")({
   component: PerfilPage,
@@ -19,8 +19,6 @@ function PerfilPage() {
   const [isSendingEmailLink, setIsSendingEmailLink] = useState(false);
   const [isSendingPasswordLink, setIsSendingPasswordLink] = useState(false);
   
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [profile, setProfile] = useState({
     username: "",
     full_name: "",
@@ -78,7 +76,6 @@ function PerfilPage() {
 
       if (!user) throw new Error("Sem usuário logado");
 
-      // 1. Update Profile Table
       const { error: profileError } = await supabase.from("profiles").upsert({
         id: user.id,
         ...profile,
@@ -87,40 +84,6 @@ function PerfilPage() {
 
       if (profileError) throw profileError;
 
-      // 2. Update Email if changed and verified
-      if (email && email !== userActualEmail && currentEmail === userActualEmail) {
-        const { error: emailError } = await supabase.auth.updateUser({ email });
-        if (emailError) throw emailError;
-        toast.info("Confirme a alteração no seu novo email.");
-      }
-
-      // 3. Update Password if provided and verified
-      if (newPassword && isPasswordVerified) {
-        if (newPassword !== confirmPassword) {
-          throw new Error("As senhas não coincidem.");
-        }
-        
-        const passwordChecks = {
-          length: newPassword.length >= 8 && newPassword.length <= 70,
-          lower: /[a-z]/.test(newPassword),
-          upper: /[A-Z]/.test(newPassword),
-          number: /[0-9]/.test(newPassword),
-          symbol: /[^A-Za-z0-9]/.test(newPassword),
-        };
-
-        if (!Object.values(passwordChecks).every(Boolean)) {
-          throw new Error("A nova senha não atende aos requisitos de segurança.");
-        }
-
-        const { error: passwordError } = await supabase.auth.updateUser({ password: newPassword });
-        if (passwordError) throw passwordError;
-        setNewPassword("");
-        setConfirmPassword("");
-        setCurrentPassword("");
-        setIsPasswordVerified(false);
-        toast.success("Senha atualizada!");
-      }
-
       toast.success("Perfil atualizado com sucesso!");
     } catch (error: any) {
       toast.error("Erro ao atualizar: " + error.message);
@@ -128,6 +91,39 @@ function PerfilPage() {
       setUpdating(false);
     }
   }
+
+  const handleRequestEmailChange = async () => {
+    if (!email || email === userActualEmail) {
+      toast.error("Insira um novo email válido.");
+      return;
+    }
+    
+    try {
+      setIsSendingEmailLink(true);
+      const { error } = await supabase.auth.updateUser({ email });
+      if (error) throw error;
+      toast.success("Link de confirmação enviado para o novo e-mail!");
+    } catch (error: any) {
+      toast.error("Erro ao enviar link: " + error.message);
+    } finally {
+      setIsSendingEmailLink(false);
+    }
+  };
+
+  const handleRequestPasswordReset = async () => {
+    try {
+      setIsSendingPasswordLink(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(userActualEmail, {
+        redirectTo: `${window.location.origin}/auth/recovery`,
+      });
+      if (error) throw error;
+      toast.success("E-mail de redefinição de senha enviado!");
+    } catch (error: any) {
+      toast.error("Erro ao enviar e-mail: " + error.message);
+    } finally {
+      setIsSendingPasswordLink(false);
+    }
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -138,24 +134,6 @@ function PerfilPage() {
   const removeAvatar = () => {
     setProfile({ ...profile, avatar_url: "" });
     toast.info("Foto de perfil marcada para remoção. Clique em Salvar para confirmar.");
-  };
-
-  const verifyCurrentPassword = async () => {
-    if (!currentPassword) return;
-    try {
-      setVerifyingPassword(true);
-      const { error } = await supabase.auth.signInWithPassword({
-        email: userActualEmail,
-        password: currentPassword,
-      });
-      if (error) throw new Error("Senha atual incorreta.");
-      setIsPasswordVerified(true);
-      toast.success("Senha verificada! Agora você pode definir uma nova senha.");
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setVerifyingPassword(false);
-    }
   };
 
   const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
