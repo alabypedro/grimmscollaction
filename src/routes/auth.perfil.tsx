@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User, Camera, Save, LogOut, Globe, Loader2 } from "lucide-react";
+import { User, Camera, Save, LogOut, Loader2, Mail, Lock, ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth/perfil")({
   component: PerfilPage,
@@ -14,11 +14,13 @@ export const Route = createFileRoute("/auth/perfil")({
 function PerfilPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [email, setEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [profile, setProfile] = useState({
     username: "",
     full_name: "",
     avatar_url: "",
-    website: "",
   });
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
