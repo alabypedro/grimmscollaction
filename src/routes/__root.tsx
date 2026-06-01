@@ -167,7 +167,7 @@ function RootComponent() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const isAuthPage = pathname.startsWith("/auth/login") || pathname.startsWith("/auth/cadastro");
+  const isAuthPage = pathname.startsWith("/auth/login") || pathname.startsWith("/auth/cadastro") || pathname.startsWith("/auth/recovery");
 
   useEffect(() => {
     if (initialized && !session && !isAuthPage) {
