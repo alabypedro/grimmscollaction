@@ -109,23 +109,6 @@ export function Header() {
                 <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === n.to ? "w-full" : "w-0 group-hover:w-full"}`} />
               </Link>
             ))}
-            {session ? (
-              <Link
-                to="/auth/perfil"
-                className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/auth/perfil" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                Perfil
-                <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/auth/perfil" ? "w-full" : "w-0 group-hover:w-full"}`} />
-              </Link>
-            ) : (
-              <Link
-                to="/auth/login"
-                className={`text-sm font-medium tracking-wide transition-colors relative group ${pathname === "/auth/login" ? "text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-              >
-                Entrar
-                <span className={`absolute -bottom-1 left-0 h-px bg-primary transition-all ${pathname === "/auth/login" ? "w-full" : "w-0 group-hover:w-full"}`} />
-              </Link>
-            )}
             {isAdmin && (
               <Link
                 to="/admin"
