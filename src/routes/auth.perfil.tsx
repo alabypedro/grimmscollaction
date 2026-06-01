@@ -95,15 +95,11 @@ function PerfilPage() {
   const handleRequestEmailChange = async () => {
     try {
       setIsSendingEmailLink(true);
-      const { error } = await supabase.auth.updateUser({ email: userActualEmail });
-      // Note: Supabase can send an email change link to the current email
-      // but to actually CHANGE the email to a NEW one, we usually pass the new email.
-      // The user asked for "the same thing you did for password" which is a request button.
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(userActualEmail, {
+      const { error } = await supabase.auth.resetPasswordForEmail(userActualEmail, {
         redirectTo: `${window.location.origin}/auth/perfil?type=email_change`,
       });
       
-      if (resetError) throw resetError;
+      if (error) throw error;
       toast.success("E-mail para alteração de e-mail enviado!");
     } catch (error: any) {
       toast.error("Erro ao enviar e-mail: " + error.message);
