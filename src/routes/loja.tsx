@@ -9,6 +9,7 @@ export const Route = createFileRoute("/loja")({
   validateSearch: (search: Record<string, unknown>) => {
     return {
       category: (search.category as string) || undefined,
+      search: (search.search as string) || undefined,
     };
   },
   head: () => ({
@@ -39,13 +40,22 @@ function LojaPage() {
       if (cat !== "Todas" && p.category !== cat) return false;
       if (mat !== "Todos" && p.material !== mat) return false;
       if (p.price > maxPrice) return false;
+      
+      // Filtro de pesquisa
+      if (search.search) {
+        const searchTerm = search.search.toLowerCase();
+        const matchesName = p.name.toLowerCase().includes(searchTerm);
+        const matchesCategory = p.category.toLowerCase().includes(searchTerm);
+        if (!matchesName && !matchesCategory) return false;
+      }
+      
       return true;
     });
     if (sort === "popular") list = [...list].sort((a, b) => b.popularity - a.popularity);
     if (sort === "price-asc") list = [...list].sort((a, b) => a.price - b.price);
     if (sort === "price-desc") list = [...list].sort((a, b) => b.price - a.price);
     return list;
-  }, [products, cat, mat, maxPrice, sort]);
+  }, [products, cat, mat, maxPrice, sort, search.search]);
 
   return (
     <div className="container mx-auto px-4 lg:px-8 py-12 lg:py-16">
