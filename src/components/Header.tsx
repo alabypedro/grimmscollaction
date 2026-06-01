@@ -25,6 +25,7 @@ export function Header() {
   const [searchValue, setSearchValue] = useState(searchParams.search || "");
   const [session, setSession] = useState<any>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [profileData, setProfileData] = useState<any>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const searchInputRef = useRef<HTMLInputElement>(null);
 
