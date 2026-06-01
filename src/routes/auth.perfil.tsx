@@ -93,18 +93,16 @@ function PerfilPage() {
   }
 
   const handleRequestEmailChange = async () => {
-    if (!email || email === userActualEmail) {
-      toast.error("Insira um novo email válido.");
-      return;
-    }
-    
     try {
       setIsSendingEmailLink(true);
-      const { error } = await supabase.auth.updateUser({ email });
+      const { error } = await supabase.auth.resetPasswordForEmail(userActualEmail, {
+        redirectTo: `${window.location.origin}/auth/perfil?type=email_change`,
+      });
+      
       if (error) throw error;
-      toast.success("Link de confirmação enviado para o novo e-mail!");
+      toast.success("E-mail para alteração de e-mail enviado!");
     } catch (error: any) {
-      toast.error("Erro ao enviar link: " + error.message);
+      toast.error("Erro ao enviar e-mail: " + error.message);
     } finally {
       setIsSendingEmailLink(false);
     }
@@ -281,14 +279,14 @@ function PerfilPage() {
                 <Button 
                   type="button" 
                   onClick={handleRequestEmailChange}
-                  disabled={isSendingEmailLink || !email || email === userActualEmail}
+                  disabled={isSendingEmailLink}
                   className="h-11 px-6 font-bold uppercase tracking-wider text-xs whitespace-nowrap"
                 >
                   {isSendingEmailLink ? <Loader2 className="h-4 w-4 animate-spin" /> : "Solicitar Troca de Email"}
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest px-1">
-                Atual: {userActualEmail}
+                ATUAL: {userActualEmail}
               </p>
             </div>
           </div>
