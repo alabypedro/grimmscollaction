@@ -16,12 +16,22 @@ const NAV = [
 export function Header() {
   const { count, setOpen } = useCart();
   const navigate = useNavigate();
+  const routerState = useRouterState();
+  const searchParams = (routerState.location.search as any) || {};
+  
   const [mobile, setMobile] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState("");
+  const [searchOpen, setSearchOpen] = useState(!!searchParams.search);
+  const [searchValue, setSearchValue] = useState(searchParams.search || "");
   const [session, setSession] = useState<any>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (searchParams.search) {
+      setSearchValue(searchParams.search);
+      setSearchOpen(true);
+    }
+  }, [searchParams.search]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
