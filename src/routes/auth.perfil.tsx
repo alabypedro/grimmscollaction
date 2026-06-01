@@ -14,12 +14,10 @@ export const Route = createFileRoute("/auth/perfil")({
 function PerfilPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
-  const [email, setEmail] = useState(""); // This will be the new email input
-  const [currentEmail, setCurrentEmail] = useState(""); // Current email input for verification
-  const [userActualEmail, setUserActualEmail] = useState(""); // The real email from Supabase
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [isPasswordVerified, setIsPasswordVerified] = useState(false);
-  const [verifyingPassword, setVerifyingPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [userActualEmail, setUserActualEmail] = useState("");
+  const [isSendingEmailLink, setIsSendingEmailLink] = useState(false);
+  const [isSendingPasswordLink, setIsSendingPasswordLink] = useState(false);
   
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -289,128 +287,51 @@ function PerfilPage() {
           
           <div className="space-y-4 pt-4 border-t border-white/5">
             <div className="space-y-2">
-              <Label htmlFor="current-email">Confirmar Email Atual para trocar</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="current-email"
-                  type="email"
-                  value={currentEmail}
-                  onChange={(e) => setCurrentEmail(e.target.value)}
-                  placeholder="Confirme seu email atual"
-                  className={`pl-10 bg-background/50 h-11 ${currentEmail === userActualEmail ? "border-primary/50" : ""}`}
-                />
-              </div>
-            </div>
-
-            {currentEmail === userActualEmail && (
-              <div className="space-y-2 animate-fade-in">
-                <Label htmlFor="new-email">Novo Email de Login</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
+              <Label htmlFor="email">Alterar Email de Login</Label>
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    id="new-email"
+                    id="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="novo@email.com"
-                    className="pl-10 bg-background/50 h-11 border-primary/30"
+                    className="pl-10 bg-background/50 h-11"
                   />
                 </div>
-                <p className="text-[10px] text-primary font-bold uppercase tracking-wider">
-                  Você precisará confirmar o novo email para concluir a troca.
-                </p>
+                <Button 
+                  type="button" 
+                  onClick={handleRequestEmailChange}
+                  disabled={isSendingEmailLink || !email || email === userActualEmail}
+                  className="h-11 px-6 font-bold uppercase tracking-wider text-xs whitespace-nowrap"
+                >
+                  {isSendingEmailLink ? <Loader2 className="h-4 w-4 animate-spin" /> : "Solicitar Troca de Email"}
+                </Button>
               </div>
-            )}
+              <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest px-1">
+                Atual: {userActualEmail}
+              </p>
+            </div>
           </div>
 
           <div className="space-y-4 pt-4 border-t border-white/5">
             <div className="space-y-2">
-              <Label htmlFor="current-password">Senha Atual para trocar</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="current-password"
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className={`pl-10 bg-background/50 h-11 ${isPasswordVerified ? "border-primary/50" : ""}`}
-                    disabled={isPasswordVerified}
-                  />
-                </div>
-                {!isPasswordVerified && (
-                  <Button 
-                    type="button" 
-                    onClick={verifyCurrentPassword} 
-                    disabled={!currentPassword || verifyingPassword}
-                    className="h-11 px-4 font-bold"
-                  >
-                    {verifyingPassword ? <Loader2 className="h-4 w-4 animate-spin" /> : "VERIFICAR"}
-                  </Button>
-                )}
-              </div>
+              <Label>Segurança da Conta</Label>
+              <Button 
+                type="button" 
+                variant="outline"
+                onClick={handleRequestPasswordReset}
+                disabled={isSendingPasswordLink}
+                className="w-full h-11 font-bold uppercase tracking-wider text-xs border-primary/20 hover:bg-primary/10"
+              >
+                {isSendingPasswordLink ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Lock className="h-4 w-4 mr-2" />}
+                Solicitar Redefinição de Senha por E-mail
+              </Button>
+              <p className="text-[10px] text-muted-foreground text-center uppercase font-bold tracking-widest">
+                Enviaremos um link seguro para o seu e-mail cadastrado
+              </p>
             </div>
-
-            {isPasswordVerified && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in">
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">Nova Senha</Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary" />
-                    <Input
-                      id="new-password"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="pl-10 bg-background/50 h-11 border-primary/30"
-                    />
-                  </div>
-                  {newPassword && (
-                    <ul className="mt-2 space-y-1 text-[9px] uppercase font-bold tracking-wider">
-                      {[
-                        { ok: newPassword.length >= 8 && newPassword.length <= 70, label: "8-70 chars" },
-                        { ok: /[a-z]/.test(newPassword), label: "Minúscula" },
-                        { ok: /[A-Z]/.test(newPassword), label: "Maiúscula" },
-                        { ok: /[0-9]/.test(newPassword), label: "Número" },
-                        { ok: /[^A-Za-z0-9]/.test(newPassword), label: "Símbolo" },
-                      ].map((r) => (
-                        <li key={r.label} className="flex items-center gap-1.5">
-                          {r.ok ? (
-                            <Check className="h-3 w-3 text-primary" />
-                          ) : (
-                            <X className="h-3 w-3 text-muted-foreground/30" />
-                          )}
-                          <span className={r.ok ? "text-foreground" : "text-muted-foreground/50"}>
-                            {r.label}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
-                  <div className="relative">
-                    <ShieldCheck className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${confirmPassword && newPassword !== confirmPassword ? "text-destructive" : "text-primary"}`} />
-                    <Input
-                      id="confirm-password"
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className={`pl-10 bg-background/50 h-11 border-primary/30 ${confirmPassword && newPassword !== confirmPassword ? "border-destructive" : ""}`}
-                    />
-                  </div>
-                  {confirmPassword && newPassword !== confirmPassword && (
-                    <p className="text-[9px] text-destructive font-bold uppercase">As senhas não coincidem</p>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           <Button type="submit" className="w-full h-12 font-bold glow-purple uppercase tracking-widest" disabled={updating}>
