@@ -18,7 +18,10 @@ import {
   Package,
   Layers,
   Palette,
-  Layout
+  Layout,
+  Users,
+  ShieldCheck,
+  UserPlus
 } from 'lucide-react';
 import { toast } from 'sonner';
 
