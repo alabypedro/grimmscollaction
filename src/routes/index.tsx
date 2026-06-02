@@ -4,6 +4,8 @@ import hero from "@/assets/hero-product.jpg";
 import { CATEGORIES } from "@/lib/products";
 import { useAdminStore } from "@/lib/admin-store";
 import { ProductCard } from "@/components/ProductCard";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,6 +26,26 @@ export const Route = createFileRoute("/")({
 function Index() {
   const { products, categories: dynamicCategories } = useAdminStore();
   const featured = products.filter((p) => p.featured);
+  const [stats, setStats] = useState({ avgRating: 4.9, totalReviews: 0 });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('rating');
+      
+      if (data && data.length > 0) {
+        const total = data.length;
+        const sum = data.reduce((acc, curr) => acc + curr.rating, 0);
+        setStats({
+          avgRating: Number((sum / total).toFixed(1)),
+          totalReviews: total
+        });
+      }
+    };
+
+    fetchStats();
+  }, []);
   return (
     <>
       {/* HERO */}
@@ -63,16 +85,23 @@ function Index() {
                 </Link>
               </div>
               <div className="flex items-center gap-8 pt-6">
-                {[
-                  { v: "10k+", l: "Peças entregues" },
-                  { v: "4.9★", l: "Avaliação média" },
-                  { v: "48h", l: "Envio rápido" },
-                ].map((s) => (
-                  <div key={s.l}>
-                    <p className="text-2xl font-bold text-foreground">{s.v}</p>
-                    <p className="text-xs text-muted-foreground tracking-wide">{s.l}</p>
-                  </div>
-                ))}
+                <div>
+                  <p className="text-2xl font-bold text-foreground">0</p>
+                  <p className="text-xs text-muted-foreground tracking-wide">Peças entregues</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">{stats.avgRating}★</p>
+                  <p className="text-xs text-muted-foreground tracking-wide flex flex-col">
+                    Avaliação média
+                    <span className="text-[10px] opacity-70">
+                      ({stats.totalReviews} {stats.totalReviews === 1 ? 'avaliação' : 'avaliações'})
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">48h</p>
+                  <p className="text-xs text-muted-foreground tracking-wide">Envio rápido</p>
+                </div>
               </div>
             </div>
 
