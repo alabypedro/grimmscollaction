@@ -92,10 +92,10 @@ function Index() {
                 <div>
                   <p className="text-2xl font-bold text-foreground">{stats.avgRating}★</p>
                   <p className="text-xs text-muted-foreground tracking-wide flex flex-col">
-                    Avaliação média
                     <span className="text-[10px] opacity-70">
                       ({stats.totalReviews} {stats.totalReviews === 1 ? 'avaliação' : 'avaliações'})
                     </span>
+                    Avaliação média
                   </p>
                 </div>
                 <div>
