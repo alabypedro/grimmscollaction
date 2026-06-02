@@ -171,7 +171,7 @@ function AdminPage() {
     }
   };
 
-  const { products, addProduct, updateProduct, deleteProduct, categories, addCategory, deleteCategory } = useAdminStore();
+  const { products, addProduct, updateProduct, deleteProduct, categories, addCategory, deleteCategory, heroProductIds, setHeroProductIds } = useAdminStore();
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -445,7 +445,56 @@ function AdminPage() {
           </div>
         ) : (
           <>
-            {/* Search and Filters */}
+        {/* Hero Section Configuration */}
+        <div className="bg-[#111111] border border-white/5 rounded-2xl p-6 mb-8">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+            <Layout className="w-5 h-5 text-purple-400" /> Destaques do Topo (Hero)
+          </h3>
+          <p className="text-sm text-zinc-400 mb-6">Selecione até 5 produtos para aparecerem no carrossel da página inicial.</p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {products.map(product => {
+              const isSelected = heroProductIds?.includes(product.id);
+              return (
+                <div 
+                  key={product.id}
+                  onClick={() => {
+                    const currentIds = heroProductIds || [];
+                    if (isSelected) {
+                      setHeroProductIds(currentIds.filter(id => id !== product.id));
+                    } else if (currentIds.length < 5) {
+                      setHeroProductIds([...currentIds, product.id]);
+                    } else {
+                      toast.error('Limite de 5 produtos atingido.');
+                    }
+                  }}
+                  className={`relative p-3 rounded-xl border transition-all cursor-pointer group ${
+                    isSelected 
+                      ? 'bg-purple-500/10 border-purple-500/40' 
+                      : 'bg-black/20 border-white/5 hover:border-white/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-md overflow-hidden border border-white/10 flex-shrink-0">
+                      <img src={product.image} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-white truncate">{product.name}</p>
+                      <p className="text-[10px] text-zinc-500">{product.category}</p>
+                    </div>
+                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                      isSelected ? 'bg-purple-500 border-purple-500' : 'border-white/20'
+                    }`}>
+                      {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Search and Filters */}
         <div className="bg-[#111111] border border-white/5 rounded-2xl p-4 mb-8 flex flex-col md:flex-row gap-4 items-center">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />

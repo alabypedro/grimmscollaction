@@ -10,12 +10,15 @@ interface AdminStore {
   deleteProduct: (id: string) => void;
   addCategory: (category: string) => void;
   deleteCategory: (category: string) => void;
+  heroProductIds: string[];
+  setHeroProductIds: (ids: string[]) => void;
 }
 
 export const useAdminStore = create<AdminStore>()(
   persist(
     (set) => ({
       products: PRODUCTS,
+      heroProductIds: PRODUCTS.slice(0, 3).map(p => p.id),
       categories: [
         "Miniaturas e Figuras",
         "Cosplay & Acessórios",
@@ -40,6 +43,7 @@ export const useAdminStore = create<AdminStore>()(
         set((state) => ({
           categories: state.categories.filter((c) => c !== category)
         })),
+      setHeroProductIds: (ids: string[]) => set({ heroProductIds: ids }),
     }),
     {
       name: 'admin-products-storage',
