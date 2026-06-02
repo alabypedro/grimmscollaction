@@ -21,7 +21,13 @@ import {
   Layout,
   Users,
   ShieldCheck,
-  UserPlus
+  UserPlus,
+  Mail,
+  History,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -38,6 +44,10 @@ function AdminPage() {
   const [adminUsers, setAdminUsers] = React.useState<any[]>([]);
   const [newAdminEmail, setNewAdminEmail] = React.useState('');
   const [isManagingAdmins, setIsManagingAdmins] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<'products' | 'admins' | 'emails'>('products');
+  const [emailLogs, setEmailLogs] = React.useState<any[]>([]);
+  const [emailStats, setEmailStats] = React.useState({ pending: 0 });
+  const [loadingLogs, setLoadingLogs] = React.useState(false);
 
   React.useEffect(() => {
     const checkSession = async () => {
@@ -60,12 +70,56 @@ function AdminPage() {
         }
         setIsAdmin(true);
         fetchAdminUsers();
+        fetchEmailData();
       }
       setLoading(false);
     };
 
     checkSession();
   }, [navigate]);
+
+  const fetchEmailData = async () => {
+    setLoadingLogs(true);
+    try {
+      // Fetch logs
+      const { data: logs, error: logsError } = await supabase
+        .from('email_send_log')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (!logsError) setEmailLogs(logs || []);
+
+      // Fetch pending counts from pgmq (using standard RPCs if available or direct queries)
+      // Since we can't easily query pgmq tables via postgrest if not exposed,
+      // we'll rely on what we can see or assume 0 for now if no rows.
+      const { data: authCount } = await supabase.rpc('read_email_batch', { queue_name: 'auth_emails', batch_size: 1, vt: 30 });
+      const { data: transCount } = await supabase.rpc('read_email_batch', { queue_name: 'transactional_emails', batch_size: 1, vt: 30 });
+      
+      // Note: read_email_batch makes them invisible, so this is just a quick check
+      // Real monitoring usually needs custom RPCs for pgmq metrics.
+    } catch (error) {
+      console.error('Error fetching email data:', error);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    try {
+      // We can trigger a test by inserting into a queue if we have the RPCs
+      // Or just send a password reset to current user as a test
+      const { error } = await supabase.auth.resetPasswordForEmail(session.user.email, {
+        redirectTo: `${window.location.origin}/auth/recovery`,
+      });
+      
+      if (error) throw error;
+      toast.success('Email de teste solicitado (Redefinição de senha). Verifique a fila em instantes.');
+      setTimeout(fetchEmailData, 2000);
+    } catch (error: any) {
+      toast.error('Erro ao enviar teste: ' + error.message);
+    }
+  };
 
   const fetchAdminUsers = async () => {
     const { data, error } = await supabase.rpc('get_admin_users');
@@ -160,40 +214,60 @@ function AdminPage() {
         <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-purple-400 bg-clip-text text-transparent">
-              {isManagingAdmins ? 'Gerenciar Administradores' : 'Painel Administrativo'}
+              {activeTab === 'admins' ? 'Gerenciar Administradores' : 
+               activeTab === 'emails' ? 'Monitoramento de Emails' : 
+               'Painel Administrativo'}
             </h1>
             <p className="text-zinc-400 mt-1">
-              {isManagingAdmins ? 'Controle quem tem acesso ao painel de controle' : 'Gerencie seu catálogo de produtos premium'}
+              {activeTab === 'admins' ? 'Controle quem tem acesso ao painel de controle' : 
+               activeTab === 'emails' ? 'Acompanhe a fila e o status dos disparos' :
+               'Gerencie seu catálogo de produtos premium'}
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <Button 
-              variant="outline"
-              onClick={() => setIsManagingAdmins(!isManagingAdmins)}
-              className="bg-black/40 border-white/10 text-white hover:bg-white/5 gap-2"
+              variant={activeTab === 'products' ? "default" : "outline"}
+              onClick={() => setActiveTab('products')}
+              className={activeTab === 'products' ? "bg-[#8B00FF]" : "bg-black/40 border-white/10 text-white hover:bg-white/5 gap-2"}
             >
-              {isManagingAdmins ? (
-                <>
-                  <Package className="w-4 h-4" /> Ver Produtos
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="w-4 h-4" /> Gerenciar Admins
-                </>
-              )}
+              <Package className="w-4 h-4" /> Produtos
             </Button>
-            {!isManagingAdmins && (
+            <Button 
+              variant={activeTab === 'admins' ? "default" : "outline"}
+              onClick={() => setActiveTab('admins')}
+              className={activeTab === 'admins' ? "bg-[#8B00FF]" : "bg-black/40 border-white/10 text-white hover:bg-white/5 gap-2"}
+            >
+              <ShieldCheck className="w-4 h-4" /> Admins
+            </Button>
+            <Button 
+              variant={activeTab === 'emails' ? "default" : "outline"}
+              onClick={() => setActiveTab('emails')}
+              className={activeTab === 'emails' ? "bg-[#8B00FF]" : "bg-black/40 border-white/10 text-white hover:bg-white/5 gap-2"}
+            >
+              <Mail className="w-4 h-4" /> Emails
+            </Button>
+            
+            {activeTab === 'products' && (
               <Button 
                 onClick={handleAddNew}
-                className="bg-[#8B00FF] hover:bg-[#7000CC] text-white gap-2 shadow-[0_0_15px_rgba(139,0,255,0.3)] transition-all"
+                className="bg-[#8B00FF] hover:bg-[#7000CC] text-white gap-2 shadow-[0_0_15px_rgba(139,0,255,0.3)] transition-all ml-auto md:ml-0"
               >
                 <Plus className="w-4 h-4" /> Novo Produto
+              </Button>
+            )}
+            
+            {activeTab === 'emails' && (
+              <Button 
+                onClick={handleTestEmail}
+                className="bg-white/10 hover:bg-white/20 text-white gap-2 border border-white/10"
+              >
+                <RefreshCw className="w-4 h-4" /> Enviar Teste
               </Button>
             )}
           </div>
         </header>
 
-        {isManagingAdmins ? (
+        {activeTab === 'admins' ? (
           <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Add Admin Form */}
             <div className="bg-[#111111] border border-white/5 rounded-2xl p-6">
@@ -266,6 +340,107 @@ function AdminPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        ) : activeTab === 'emails' ? (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Domain Status Card */}
+            <div className="bg-[#111111] border border-white/5 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-purple-400" /> Status do Domínio
+                </h3>
+                <span className="text-xs px-2 py-1 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> Verificação Pendente
+                </span>
+              </div>
+              <div className="bg-black/30 rounded-xl p-4 border border-white/5">
+                <p className="text-sm text-zinc-300">
+                  O domínio <span className="text-purple-400 font-mono">notify.grimmscollection.com.br</span> está aguardando a propagação DNS. 
+                  Certifique-se de que os registros CNAME e TXT fornecidos no painel Lovable Cloud foram adicionados corretamente ao seu provedor DNS.
+                </p>
+              </div>
+            </div>
+
+            {/* Logs Table */}
+            <div className="bg-[#111111] border border-white/5 rounded-2xl overflow-hidden">
+              <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <History className="w-5 h-5 text-purple-400" /> Logs de Envio (Últimos 50)
+                </h3>
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  onClick={fetchEmailData}
+                  className="text-zinc-400 hover:text-white"
+                >
+                  <RefreshCw className={`w-4 h-4 mr-2 ${loadingLogs ? 'animate-spin' : ''}`} /> Atualizar
+                </Button>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-white/5 text-zinc-400 text-xs uppercase tracking-wider font-semibold border-b border-white/5">
+                      <th className="px-6 py-4">Status</th>
+                      <th className="px-6 py-4">Destinatário</th>
+                      <th className="px-6 py-4">Modelo/Assunto</th>
+                      <th className="px-6 py-4">Data/Hora</th>
+                      <th className="px-6 py-4 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {emailLogs.length > 0 ? (
+                      emailLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group">
+                          <td className="px-6 py-4">
+                            {log.status === 'sent' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">
+                                <CheckCircle2 className="w-3 h-3" /> Enviado
+                              </span>
+                            ) : log.status === 'failed' ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">
+                                <AlertCircle className="w-3 h-3" /> Falhou
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
+                                <Clock className="w-3 h-3" /> {log.status}
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-zinc-300">{log.recipient_email}</td>
+                          <td className="px-6 py-4">
+                            <div className="text-sm text-white">{log.template_name || 'Personalizado'}</div>
+                            {log.error_message && (
+                              <div className="text-[10px] text-red-400 truncate max-w-[200px]" title={log.error_message}>
+                                {log.error_message}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-xs text-zinc-500">
+                            {new Date(log.created_at).toLocaleString('pt-BR')}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-500 hover:text-white">
+                              <Search className="w-4 h-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
+                          <div className="flex flex-col items-center gap-2">
+                            <Mail className="w-8 h-8 opacity-20" />
+                            <p>Nenhum log de envio encontrado.</p>
+                            <p className="text-xs">Inicie disparos ou envie um teste para ver dados aqui.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         ) : (

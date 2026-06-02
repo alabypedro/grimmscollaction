@@ -50,7 +50,7 @@ function AuthPage() {
           redirectTo: `${window.location.origin}/auth/recovery`,
         });
         if (error) throw error;
-        toast.success("Email de recuperação enviado!");
+        toast.success("E-mail de recuperação enviado! Verifique sua caixa de entrada e spam.");
         setIsForgot(false);
       } else if (isSignUp) {
         const { error } = await supabase.auth.signUp({
@@ -63,7 +63,7 @@ function AuthPage() {
           },
         });
         if (error) throw error;
-        toast.success("Cadastro realizado com sucesso!");
+        toast.success("Cadastro realizado com sucesso! Verifique seu e-mail para confirmar a conta.");
         setSuccess(true);
         setTimeout(() => {
           setIsSignUp(false);
