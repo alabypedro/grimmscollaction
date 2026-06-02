@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Sparkles, Shield, Truck, Zap, Star, Quote, Search } from "lucide-react";
+import { ArrowRight, Sparkles, Shield, Truck, Zap, Star, Quote, Search, ChevronLeft, ChevronRight } from "lucide-react";
 import hero from "@/assets/hero-product.jpg";
 import { CATEGORIES } from "@/lib/products";
 import { useAdminStore } from "@/lib/admin-store";
@@ -24,9 +24,18 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { products, categories: dynamicCategories } = useAdminStore();
+  const { products, categories: dynamicCategories, heroProductIds } = useAdminStore();
   const featured = products.filter((p) => p.featured);
   const [stats, setStats] = useState({ avgRating: 4.9, totalReviews: 0 });
+  
+  const heroProducts = products.filter(p => heroProductIds?.includes(p.id));
+  const activeHeroProducts = heroProducts.length > 0 ? heroProducts : products.slice(0, 1);
+  const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+
+  const nextHero = () => setCurrentHeroIndex((prev) => (prev + 1) % activeHeroProducts.length);
+  const prevHero = () => setCurrentHeroIndex((prev) => (prev - 1 + activeHeroProducts.length) % activeHeroProducts.length);
+
+  const currentProduct = activeHeroProducts[currentHeroIndex];
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -105,23 +114,46 @@ function Index() {
               </div>
             </div>
 
-            <div className="relative">
+            <div className="relative group/hero">
               <div className="absolute inset-0 bg-primary/30 blur-[120px] rounded-full" />
-              <img
-                src={hero}
-                alt="Crânio de dragão impresso em 3D"
-                width={1536}
-                height={1536}
-                className="relative rounded-2xl border border-border shadow-2xl animate-float w-full"
-              />
+              <div className="relative overflow-hidden rounded-2xl border border-border shadow-2xl animate-float aspect-square max-w-[600px] mx-auto">
+                <img
+                  key={currentProduct?.id}
+                  src={currentProduct?.image}
+                  alt={currentProduct?.name}
+                  width={1536}
+                  height={1536}
+                  className="w-full h-full object-cover transition-opacity duration-500"
+                />
+                
+                {activeHeroProducts.length > 1 && (
+                  <>
+                    <button 
+                      onClick={prevHero}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 backdrop-blur border border-white/10 flex items-center justify-center text-white opacity-0 group-hover/hero:opacity-100 transition-all hover:bg-primary/50"
+                      aria-label="Anterior"
+                    >
+                      <ChevronLeft className="h-6 w-6" />
+                    </button>
+                    <button 
+                      onClick={nextHero}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 backdrop-blur border border-white/10 flex items-center justify-center text-white opacity-0 group-hover/hero:opacity-100 transition-all hover:bg-primary/50"
+                      aria-label="Próximo"
+                    >
+                      <ChevronRight className="h-6 w-6" />
+                    </button>
+                  </>
+                )}
+              </div>
+              
               <div className="absolute -bottom-6 -left-6 bg-card/90 backdrop-blur-xl border border-border rounded-xl p-4 shadow-2xl hidden md:block">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-primary/20 grid place-items-center">
                     <Sparkles className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Edição limitada</p>
-                    <p className="text-sm font-bold">Apenas 500 unidades</p>
+                    <p className="text-xs text-muted-foreground">{currentProduct?.category || 'Edição limitada'}</p>
+                    <p className="text-sm font-bold">{currentProduct?.name}</p>
                   </div>
                 </div>
               </div>
