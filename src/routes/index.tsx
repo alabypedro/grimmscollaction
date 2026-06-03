@@ -120,7 +120,7 @@ function Index() {
                 <img
                   key={currentProduct?.id}
                   src={currentProduct?.image}
-                  alt={currentProduct?.name}
+                  alt={currentProduct ? `Peça impressa em 3D: ${currentProduct.name}` : "Peça impressa em 3D em destaque"}
                   width={1536}
                   height={1536}
                   className="w-full h-full object-cover transition-opacity duration-500"
@@ -181,7 +181,7 @@ function Index() {
             >
               <img
                 src={products.find(p => p.category === c)?.image || products[0]?.image}
-                alt={c}
+                alt={`Categoria ${c}`}
                 loading="lazy"
                 className="h-full w-full object-cover opacity-50 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700"
               />
