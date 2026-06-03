@@ -40,7 +40,7 @@ function CategoriasPage() {
               search={{ category: c }}
               className="group relative h-72 rounded-xl overflow-hidden border border-border card-hover"
             >
-              <img src={sample.image} alt={c} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
+              <img src={sample.image} alt={`Categoria ${c}`} className="h-full w-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" />
               <div className="absolute inset-0 bg-gradient-to-tr from-background via-background/40 to-transparent" />
               <div className="absolute inset-0 p-8 flex flex-col justify-end">
                 <p className="text-xs tracking-[0.25em] text-primary font-bold mb-2">{count} PEÇA{count !== 1 && "S"}</p>
