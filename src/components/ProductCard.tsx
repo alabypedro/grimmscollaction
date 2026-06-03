@@ -34,7 +34,7 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="relative aspect-square overflow-hidden bg-secondary/40">
         <img
           src={product.image}
-          alt={product.name}
+          alt={`Peça impressa em 3D: ${product.name}`}
           loading="lazy"
           width={800}
           height={800}

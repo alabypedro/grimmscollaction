@@ -172,7 +172,7 @@ function ProductPage() {
         <div className="space-y-4">
           <div className="relative aspect-square rounded-xl overflow-hidden border border-border bg-card">
             <div className="absolute inset-0 bg-primary/20 blur-3xl -z-10" />
-            <img src={product.gallery[activeImg]} alt={product.name} className="h-full w-full object-cover" />
+            <img src={product.gallery[activeImg]} alt={`Peça impressa em 3D: ${product.name}`} className="h-full w-full object-cover" />
           </div>
           <div className="grid grid-cols-4 gap-3">
             {product.gallery.map((g, i) => (
@@ -182,7 +182,7 @@ function ProductPage() {
                 aria-label={`Ver imagem ${i + 1} de ${product.name}`}
                 className={`aspect-square rounded-md overflow-hidden border-2 transition-colors ${activeImg === i ? "border-primary" : "border-border hover:border-muted-foreground"}`}
               >
-                <img src={g} alt={`${product.name} — imagem ${i + 1}`} className="h-full w-full object-cover" />
+                <img src={g} alt={`Peça impressa em 3D: ${product.name} — imagem ${i + 1}`} className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
