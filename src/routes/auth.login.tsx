@@ -103,6 +103,7 @@ function AuthPage() {
   if (isForgot) {
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-gradient-hero p-4 page-transition overflow-hidden">
+        <h1 className="sr-only">Recuperar senha — Grimm's Collection</h1>
         <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/20 blur-3xl animate-blob" />
         <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl animate-blob" style={{ animationDelay: "4s" }} />
 
@@ -148,6 +149,7 @@ function AuthPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gradient-hero p-4 page-transition overflow-hidden">
+      <h1 className="sr-only">{isSignUp ? "Criar conta na Grimm's Collection" : "Entrar na Grimm's Collection"}</h1>
       <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/20 blur-3xl animate-blob" />
       <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl animate-blob" style={{ animationDelay: "4s" }} />
       <div className="pointer-events-none absolute top-1/3 right-1/4 h-64 w-64 rounded-full bg-primary/5 blur-3xl animate-blob" style={{ animationDelay: "2s" }} />
