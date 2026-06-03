@@ -6,13 +6,34 @@ export const Route = createFileRoute("/contato")({
   head: () => ({
     meta: [
       { title: "Contato — Grimm's Collection" },
-      { name: "description", content: "Fale com a Grimm's Collection. Tire dúvidas, peça encomendas customizadas ou colabore com a marca." },
+      { name: "description", content: "Fale com a Grimm's Collection em São Paulo. Tire dúvidas, peça encomendas customizadas em impressão 3D ou colabore com a marca via e-mail e WhatsApp." },
       { property: "og:title", content: "Contato — Grimm's Collection" },
-      { property: "og:description", content: "Estamos prontos para responder." },
+      { property: "og:description", content: "Atelier de impressão 3D em São Paulo — fale conosco por e-mail ou WhatsApp para encomendas customizadas." },
       { property: "og:url", content: "https://grimmscollaction.lovable.app/contato" },
     ],
     links: [
       { rel: "canonical", href: "https://grimmscollaction.lovable.app/contato" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Store",
+          name: "Grimm's Collection",
+          description: "Atelier brasileiro de modelagem e impressão 3D de alta resolução para colecionadores.",
+          url: "https://grimmscollaction.lovable.app/contato",
+          email: "ola@grimmscollection.com",
+          telephone: "+55-11-99999-0000",
+          address: {
+            "@type": "PostalAddress",
+            addressLocality: "São Paulo",
+            addressRegion: "SP",
+            addressCountry: "BR",
+          },
+          areaServed: "BR",
+        }),
+      },
     ],
   }),
   component: ContatoPage,

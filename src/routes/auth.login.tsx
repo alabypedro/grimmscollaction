@@ -10,6 +10,19 @@ import { Mail, Lock, User, Check, X, Sparkles, UserPlus } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/auth/login")({
+  head: () => ({
+    meta: [
+      { title: "Acesse sua Conta — Grimm's Collection" },
+      { name: "description", content: "Entre na sua conta Grimm's Collection para acompanhar pedidos, salvar favoritos e acessar drops exclusivos de impressão 3D." },
+      { name: "robots", content: "noindex, follow" },
+      { property: "og:title", content: "Acesse sua Conta — Grimm's Collection" },
+      { property: "og:description", content: "Login da Grimm's Collection: acompanhe pedidos e drops exclusivos de impressão 3D." },
+      { property: "og:url", content: "https://grimmscollaction.lovable.app/auth/login" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://grimmscollaction.lovable.app/auth/login" },
+    ],
+  }),
   component: AuthPage,
 });
 
@@ -90,6 +103,7 @@ function AuthPage() {
   if (isForgot) {
     return (
       <div className="relative min-h-screen flex items-center justify-center bg-gradient-hero p-4 page-transition overflow-hidden">
+        <h1 className="sr-only">Recuperar senha — Grimm's Collection</h1>
         <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/20 blur-3xl animate-blob" />
         <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl animate-blob" style={{ animationDelay: "4s" }} />
 
@@ -135,6 +149,7 @@ function AuthPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gradient-hero p-4 page-transition overflow-hidden">
+      <h1 className="sr-only">{isSignUp ? "Criar conta na Grimm's Collection" : "Entrar na Grimm's Collection"}</h1>
       <div className="pointer-events-none absolute -top-40 -left-40 h-96 w-96 rounded-full bg-primary/20 blur-3xl animate-blob" />
       <div className="pointer-events-none absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-primary/10 blur-3xl animate-blob" style={{ animationDelay: "4s" }} />
       <div className="pointer-events-none absolute top-1/3 right-1/4 h-64 w-64 rounded-full bg-primary/5 blur-3xl animate-blob" style={{ animationDelay: "2s" }} />
