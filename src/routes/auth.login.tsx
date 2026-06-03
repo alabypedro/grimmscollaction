@@ -10,6 +10,19 @@ import { Mail, Lock, User, Check, X, Sparkles, UserPlus } from "lucide-react";
 import { Logo } from "@/components/Logo";
 
 export const Route = createFileRoute("/auth/login")({
+  head: () => ({
+    meta: [
+      { title: "Acesse sua Conta — Grimm's Collection" },
+      { name: "description", content: "Entre na sua conta Grimm's Collection para acompanhar pedidos, salvar favoritos e acessar drops exclusivos de impressão 3D." },
+      { name: "robots", content: "noindex, follow" },
+      { property: "og:title", content: "Acesse sua Conta — Grimm's Collection" },
+      { property: "og:description", content: "Login da Grimm's Collection: acompanhe pedidos e drops exclusivos de impressão 3D." },
+      { property: "og:url", content: "https://grimmscollaction.lovable.app/auth/login" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://grimmscollaction.lovable.app/auth/login" },
+    ],
+  }),
   component: AuthPage,
 });
 
