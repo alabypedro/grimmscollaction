@@ -33,6 +33,19 @@ import { toast } from 'sonner';
 
 export const Route = createFileRoute('/admin')({
   // Component handles its own session check to avoid SSR redirect issues
+  head: () => ({
+    meta: [
+      { title: "Painel Administrativo — Grimm's Collection" },
+      { name: "description", content: "Painel administrativo da Grimm's Collection para gerenciar produtos, categorias, administradores e fila de e-mails." },
+      { name: "robots", content: "noindex, nofollow" },
+      { property: "og:title", content: "Painel Administrativo — Grimm's Collection" },
+      { property: "og:description", content: "Área restrita para administradores da Grimm's Collection." },
+      { property: "og:url", content: "https://grimmscollaction.lovable.app/admin" },
+    ],
+    links: [
+      { rel: "canonical", href: "https://grimmscollaction.lovable.app/admin" },
+    ],
+  }),
   component: AdminPage,
 });
 
