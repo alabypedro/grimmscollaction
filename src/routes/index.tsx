@@ -10,10 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Grimm's Collection — Impressão 3D Premium" },
-      { name: "description", content: "Descubra peças impressas em 3D de alta qualidade: miniaturas, cosplay, decoração e gadgets exclusivos." },
-      { property: "og:title", content: "Grimm's Collection — Impressão 3D Premium" },
-      { property: "og:description", content: "Loja premium de impressão 3D." },
+      { title: "Grimm's Collection — Modelagem e Impressão 3D de Alta Qualidade" },
+      { name: "description", content: "Loja premium brasileira de peças impressas em 3D em alta resolução: miniaturas, cosplay, decoração e gadgets para colecionadores exigentes." },
+      { property: "og:title", content: "Grimm's Collection — Modelagem e Impressão 3D de Alta Qualidade" },
+      { property: "og:description", content: "Peças impressas em 3D em alta resolução para colecionadores: miniaturas, cosplay, decoração e edições limitadas feitas no Brasil." },
       { property: "og:url", content: "https://grimmscollaction.lovable.app/" },
     ],
     links: [
