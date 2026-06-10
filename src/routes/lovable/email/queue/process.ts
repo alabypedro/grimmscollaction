@@ -1,4 +1,5 @@
 import { sendLovableEmail } from '@lovable.dev/email-js'
+import { render } from '@react-email/components'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
 
