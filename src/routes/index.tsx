@@ -66,10 +66,6 @@ function Index() {
         <div className="container mx-auto px-4 lg:px-8 pt-16 pb-24 lg:pt-24 lg:pb-32">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
             <div className="space-y-8 animate-fade-in">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card/50 backdrop-blur text-xs tracking-[0.2em] text-muted-foreground">
-                <Sparkles className="h-3 w-3 text-primary" />
-                NOVA COLEÇÃO · INVERNO 2026
-              </div>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-[0.95]">
                 Esculpido em <br />
                 <span className="text-gradient">sombras</span>. <br />
