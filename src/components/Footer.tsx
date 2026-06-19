@@ -24,7 +24,7 @@ export function Footer() {
           <div>
             <h4 className="text-xs tracking-[0.25em] text-foreground font-bold mb-4">NAVEGAÇÃO</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link to="/loja" className="hover:text-primary">Loja</Link></li>
+              <li><Link to="/loja" search={{ category: undefined, search: undefined }} className="hover:text-primary">Loja</Link></li>
               <li><Link to="/categorias" className="hover:text-primary">Categorias</Link></li>
               <li><Link to="/sobre" className="hover:text-primary">Sobre</Link></li>
               <li><Link to="/contato" className="hover:text-primary">Contato</Link></li>

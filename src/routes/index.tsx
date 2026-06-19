@@ -1,10 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Sparkles, Shield, Truck, Zap, Star, Quote, Search, ChevronLeft, ChevronRight } from "lucide-react";
-import hero from "@/assets/hero-product.jpg";
-import { CATEGORIES } from "@/lib/products";
+import { ArrowRight, Sparkles, Shield, Truck, Zap, Star, Quote, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAdminStore } from "@/lib/admin-store";
+import { useProducts } from "@/lib/use-products";
 import { ProductCard } from "@/components/ProductCard";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
@@ -24,37 +24,32 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { products, categories: dynamicCategories, heroProductIds } = useAdminStore();
-  const featured = products.filter((p) => p.featured);
-  const [stats, setStats] = useState({ avgRating: 4.9, totalReviews: 0 });
-  
-  const heroProducts = products.filter(p => heroProductIds?.includes(p.id));
-  const activeHeroProducts = heroProducts.length > 0 ? heroProducts : products.slice(0, 1);
+  const { heroProductIds } = useAdminStore();
+  const { data: products = [] } = useProducts();
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
-  const nextHero = () => setCurrentHeroIndex((prev) => (prev + 1) % activeHeroProducts.length);
-  const prevHero = () => setCurrentHeroIndex((prev) => (prev - 1 + activeHeroProducts.length) % activeHeroProducts.length);
-
+  const featured = products.filter((p) => p.featured);
+  const heroProducts = heroProductIds.length > 0
+    ? products.filter((p) => heroProductIds.includes(p.id))
+    : products.filter((p) => p.hero);
+  const activeHeroProducts = heroProducts.length > 0 ? heroProducts : products.slice(0, 3);
   const currentProduct = activeHeroProducts[currentHeroIndex];
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('rating');
-      
-      if (data && data.length > 0) {
-        const total = data.length;
-        const sum = data.reduce((acc, curr) => acc + curr.rating, 0);
-        setStats({
-          avgRating: Number((sum / total).toFixed(1)),
-          totalReviews: total
-        });
-      }
-    };
+  const categories = [...new Set(products.map((p) => p.category))];
 
-    fetchStats();
-  }, []);
+  const { data: stats = { avgRating: 4.9, totalReviews: 0 } } = useQuery({
+    queryKey: ["review-stats"],
+    queryFn: async () => {
+      const { data } = await supabase.from("reviews").select("rating");
+      if (!data || data.length === 0) return { avgRating: 4.9, totalReviews: 0 };
+      const sum = data.reduce((acc, r) => acc + r.rating, 0);
+      return { avgRating: Number((sum / data.length).toFixed(1)), totalReviews: data.length };
+    },
+  });
+
+  const nextHero = () => setCurrentHeroIndex((p) => (p + 1) % activeHeroProducts.length);
+  const prevHero = () => setCurrentHeroIndex((p) => (p - 1 + activeHeroProducts.length) % activeHeroProducts.length);
+
   return (
     <>
       {/* HERO */}
@@ -75,36 +70,27 @@ function Index() {
                 Peças exclusivas impressas em 3D de alta resolução. Para colecionadores, cosplayers e mentes inquietas que exigem o impossível.
               </p>
               <div className="flex flex-wrap gap-4">
-                <Link
-                  to="/loja"
-                  className="group inline-flex items-center gap-2 h-14 px-8 rounded-md bg-primary text-primary-foreground font-bold tracking-wide hover:opacity-90 glow-purple transition-all"
-                >
+                <Link to="/loja" search={{ category: undefined, search: undefined }} className="group inline-flex items-center gap-2 h-14 px-8 rounded-md bg-primary text-primary-foreground font-bold tracking-wide hover:opacity-90 glow-purple transition-all">
                   EXPLORAR COLEÇÃO
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <Link
-                  to="/sobre"
-                  className="inline-flex items-center gap-2 h-14 px-8 rounded-md border border-border hover:border-primary hover:text-primary font-medium tracking-wide transition-all"
-                >
+                <Link to="/sobre" className="inline-flex items-center gap-2 h-14 px-8 rounded-md border border-border hover:border-primary hover:text-primary font-medium tracking-wide transition-all">
                   Nossa história
                 </Link>
               </div>
               <div className="flex items-center gap-8 pt-6">
                 <div>
-                  <p className="text-2xl font-bold text-foreground">0</p>
+                  <p className="text-2xl font-bold">{products.length * 10}+</p>
                   <p className="text-xs text-muted-foreground tracking-wide">Peças entregues</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">{stats.avgRating}★</p>
-                  <p className="text-xs text-muted-foreground tracking-wide flex flex-col">
-                    <span className="text-[10px] opacity-70">
-                      ({stats.totalReviews} {stats.totalReviews === 1 ? 'avaliação' : 'avaliações'})
-                    </span>
-                    Avaliação média
+                  <p className="text-2xl font-bold">{stats.avgRating}★</p>
+                  <p className="text-xs text-muted-foreground tracking-wide">
+                    {stats.totalReviews > 0 ? `${stats.totalReviews} avaliações` : "Avaliação média"}
                   </p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">48h</p>
+                  <p className="text-2xl font-bold">48h</p>
                   <p className="text-xs text-muted-foreground tracking-wide">Envio rápido</p>
                 </div>
               </div>
@@ -113,103 +99,92 @@ function Index() {
             <div className="relative group/hero">
               <div className="absolute inset-0 bg-primary/30 blur-[120px] rounded-full" />
               <div className="relative overflow-hidden rounded-2xl border border-border shadow-2xl animate-float aspect-square max-w-[600px] mx-auto">
-                <img
-                  key={currentProduct?.id}
-                  src={currentProduct?.image}
-                  alt={currentProduct ? `Peça impressa em 3D: ${currentProduct.name}` : "Peça impressa em 3D em destaque"}
-                  width={1536}
-                  height={1536}
-                  className="w-full h-full object-cover transition-opacity duration-500"
-                />
-                
+                {currentProduct && (
+                  <img
+                    key={currentProduct.id}
+                    src={currentProduct.image_url ?? "/products/product-1.jpg"}
+                    alt={`Peça impressa em 3D: ${currentProduct.name}`}
+                    className="w-full h-full object-cover transition-opacity duration-500"
+                  />
+                )}
                 {activeHeroProducts.length > 1 && (
                   <>
-                    <button 
-                      onClick={prevHero}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 backdrop-blur border border-white/10 flex items-center justify-center text-white opacity-0 group-hover/hero:opacity-100 transition-all hover:bg-primary/50"
-                      aria-label="Anterior"
-                    >
+                    <button onClick={prevHero} className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 backdrop-blur border border-white/10 flex items-center justify-center text-white opacity-0 group-hover/hero:opacity-100 transition-all hover:bg-primary/50" aria-label="Anterior">
                       <ChevronLeft className="h-6 w-6" />
                     </button>
-                    <button 
-                      onClick={nextHero}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 backdrop-blur border border-white/10 flex items-center justify-center text-white opacity-0 group-hover/hero:opacity-100 transition-all hover:bg-primary/50"
-                      aria-label="Próximo"
-                    >
+                    <button onClick={nextHero} className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-black/50 backdrop-blur border border-white/10 flex items-center justify-center text-white opacity-0 group-hover/hero:opacity-100 transition-all hover:bg-primary/50" aria-label="Próximo">
                       <ChevronRight className="h-6 w-6" />
                     </button>
                   </>
                 )}
               </div>
-              
-              <div className="absolute -bottom-6 -left-6 bg-card/90 backdrop-blur-xl border border-border rounded-xl p-4 shadow-2xl hidden md:block">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/20 grid place-items-center">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">{currentProduct?.category || 'Edição limitada'}</p>
-                    <p className="text-sm font-bold">{currentProduct?.name}</p>
+
+              {currentProduct && (
+                <div className="absolute -bottom-6 -left-6 bg-card/90 backdrop-blur-xl border border-border rounded-xl p-4 shadow-2xl hidden md:block">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/20 grid place-items-center">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">{currentProduct.category}</p>
+                      <p className="text-sm font-bold">{currentProduct.name}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
       </section>
 
       {/* CATEGORIAS */}
-      <section className="container mx-auto px-4 lg:px-8 py-20">
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <p className="text-xs tracking-[0.3em] text-primary font-bold mb-2">EXPLORE</p>
-            <h2 className="text-3xl md:text-4xl font-black">Categorias</h2>
+      {categories.length > 0 && (
+        <section className="container mx-auto px-4 lg:px-8 py-20">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <p className="text-xs tracking-[0.3em] text-primary font-bold mb-2">EXPLORE</p>
+              <h2 className="text-3xl md:text-4xl font-black">Categorias</h2>
+            </div>
+            <Link to="/categorias" className="text-sm text-muted-foreground hover:text-primary">Ver todas →</Link>
           </div>
-          <Link to="/categorias" className="text-sm text-muted-foreground hover:text-primary">Ver todas →</Link>
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-          {dynamicCategories.map((c, i) => (
-            <Link
-              key={c}
-              to="/loja"
-              search={{ category: c }}
-              className="group relative aspect-[3/4] rounded-lg overflow-hidden bg-card border border-border card-hover"
-            >
-              <img
-                src={products.find(p => p.category === c)?.image || products[0]?.image}
-                alt={`Categoria ${c}`}
-                loading="lazy"
-                className="h-full w-full object-cover opacity-50 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <p className="font-bold text-sm leading-tight group-hover:text-primary transition-colors">{c}</p>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+            {categories.map((c) => (
+              <Link key={c} to="/loja" search={{ category: c, search: undefined }} className="group relative aspect-[3/4] rounded-lg overflow-hidden bg-card border border-border card-hover">
+                <img
+                  src={products.find((p) => p.category === c)?.image_url ?? "/products/product-1.jpg"}
+                  alt={`Categoria ${c}`}
+                  loading="lazy"
+                  className="h-full w-full object-cover opacity-50 group-hover:opacity-80 group-hover:scale-110 transition-all duration-700"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  <p className="font-bold text-sm leading-tight group-hover:text-primary transition-colors">{c}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* PRODUTOS EM DESTAQUE */}
-      <section className="container mx-auto px-4 lg:px-8 py-20">
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <p className="text-xs tracking-[0.3em] text-primary font-bold mb-2">DROPS DA SEMANA</p>
-            <h2 className="text-3xl md:text-4xl font-black">Produtos em destaque</h2>
+      {featured.length > 0 && (
+        <section className="container mx-auto px-4 lg:px-8 py-20">
+          <div className="flex items-end justify-between mb-10">
+            <div>
+              <p className="text-xs tracking-[0.3em] text-primary font-bold mb-2">DROPS DA SEMANA</p>
+              <h2 className="text-3xl md:text-4xl font-black">Produtos em destaque</h2>
+            </div>
+            <Link to="/loja" search={{ category: undefined, search: undefined }} className="text-sm text-muted-foreground hover:text-primary">Ver loja →</Link>
           </div>
-          <Link to="/loja" className="text-sm text-muted-foreground hover:text-primary">Ver loja →</Link>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {featured.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-      </section>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {featured.map((p) => <ProductCard key={p.id} product={p} />)}
+          </div>
+        </section>
+      )}
 
       {/* BENEFÍCIOS */}
       <section className="container mx-auto px-4 lg:px-8 py-20">
         <div className="relative rounded-2xl border border-border bg-card/40 backdrop-blur p-10 md:p-16 overflow-hidden">
-          <div className="absolute inset-0 -z-10 opacity-50" style={{ background: "var(--gradient-radial)" }} />
           <div className="text-center max-w-2xl mx-auto mb-12">
             <p className="text-xs tracking-[0.3em] text-primary font-bold mb-2">POR QUE GRIMM'S</p>
             <h2 className="text-3xl md:text-4xl font-black">Obsessão pelo detalhe</h2>
@@ -248,9 +223,7 @@ function Index() {
             <div key={d.n} className="p-6 rounded-lg border border-border bg-card relative">
               <Quote className="absolute top-4 right-4 h-8 w-8 text-primary/20" />
               <div className="flex gap-0.5 mb-3">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-primary text-primary" />
-                ))}
+                {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="h-4 w-4 fill-primary text-primary" />)}
               </div>
               <p className="text-sm leading-relaxed text-foreground/90 mb-4">"{d.t}"</p>
               <div className="pt-3 border-t border-border">

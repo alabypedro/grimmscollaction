@@ -1,225 +1,142 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import React, { useState } from 'react';
-import { useAdminStore } from '@/lib/admin-store';
-import { supabase } from '@/integrations/supabase/client';
-import { Product, Category, MATERIALS, Material } from '@/lib/products';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { 
-  Plus, 
-  Trash2, 
-  Edit, 
-  Search, 
-  ArrowLeft,
-  X,
-  Settings2,
-  Package,
-  Layers,
-  Palette,
-  Layout,
-  Users,
-  ShieldCheck,
-  UserPlus,
-  Mail,
-  History,
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  RefreshCw
-} from 'lucide-react';
-import { toast } from 'sonner';
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import React, { useState } from "react";
+import { useAdminStore } from "@/lib/admin-store";
+import { useAllProducts } from "@/lib/use-products";
+import { supabase } from "@/integrations/supabase/client";
+import type { Product, Material, Category } from "@/lib/products";
+import { MATERIALS } from "@/lib/products";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useQueryClient, useMutation } from "@tanstack/react-query";
+import { formatBRL } from "@/lib/cart";
+import {
+  Plus, Trash2, Edit, Search, X, Settings2, Package, Layers, Palette,
+  Layout, Users, ShieldCheck, UserPlus, Mail, History, AlertCircle,
+  CheckCircle2, Clock, RefreshCw, ShoppingCart, Truck, Upload, Loader2
+} from "lucide-react";
+import { toast } from "sonner";
 
-export const Route = createFileRoute('/admin')({
-  // Component handles its own session check to avoid SSR redirect issues
+export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
       { title: "Painel Administrativo — Grimm's Collection" },
-      { name: "description", content: "Painel administrativo da Grimm's Collection para gerenciar produtos, categorias, administradores e fila de e-mails." },
       { name: "robots", content: "noindex, nofollow" },
-      { property: "og:title", content: "Painel Administrativo — Grimm's Collection" },
-      { property: "og:description", content: "Área restrita para administradores da Grimm's Collection." },
-      { property: "og:url", content: "https://grimmscollaction.lovable.app/admin" },
-    ],
-    links: [
-      { rel: "canonical", href: "https://grimmscollaction.lovable.app/admin" },
     ],
   }),
   component: AdminPage,
 });
 
+type Tab = "products" | "orders" | "admins" | "emails";
+
 function AdminPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [session, setSession] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(true);
   const [isAdmin, setIsAdmin] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<Tab>("products");
+
   const [adminUsers, setAdminUsers] = React.useState<any[]>([]);
-  const [newAdminEmail, setNewAdminEmail] = React.useState('');
-  const [isManagingAdmins, setIsManagingAdmins] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<'products' | 'admins' | 'emails'>('products');
+  const [newAdminEmail, setNewAdminEmail] = React.useState("");
   const [emailLogs, setEmailLogs] = React.useState<any[]>([]);
-  const [emailStats, setEmailStats] = React.useState({ pending: 0 });
   const [loadingLogs, setLoadingLogs] = React.useState(false);
+
+  const { data: products = [], isLoading: loadingProducts } = useAllProducts();
+  const { heroProductIds, setHeroProductIds } = useAdminStore();
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   React.useEffect(() => {
     const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        navigate({ to: '/auth/login', search: { redirect: window.location.href } });
-      } else {
-        setSession(session);
-        // Check if user is admin
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (error || !profile?.is_admin) {
-          toast.error('Acesso negado. Apenas administradores podem acessar esta página.');
-          navigate({ to: '/' });
-          return;
-        }
-        setIsAdmin(true);
-        fetchAdminUsers();
-        fetchEmailData();
+        navigate({ to: "/auth/login" });
+        return;
       }
+      setSession(session);
+      const { data: profile } = await supabase.from("profiles").select("is_admin").eq("id", session.user.id).single();
+      if (!profile?.is_admin) {
+        toast.error("Acesso negado.");
+        navigate({ to: "/" });
+        return;
+      }
+      setIsAdmin(true);
+      fetchAdminUsers();
+      fetchEmailData();
       setLoading(false);
     };
-
     checkSession();
-  }, [navigate]);
+  }, []);
 
   const fetchEmailData = async () => {
     setLoadingLogs(true);
-    try {
-      // Fetch logs
-      const { data: logs, error: logsError } = await supabase
-        .from('email_send_log')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
-      if (!logsError) setEmailLogs(logs || []);
-
-      // Fetch pending counts from pgmq (using standard RPCs if available or direct queries)
-      // Since we can't easily query pgmq tables via postgrest if not exposed,
-      // we'll rely on what we can see or assume 0 for now if no rows.
-      const { data: authCount } = await supabase.rpc('read_email_batch', { queue_name: 'auth_emails', batch_size: 1, vt: 30 });
-      const { data: transCount } = await supabase.rpc('read_email_batch', { queue_name: 'transactional_emails', batch_size: 1, vt: 30 });
-      
-      // Note: read_email_batch makes them invisible, so this is just a quick check
-      // Real monitoring usually needs custom RPCs for pgmq metrics.
-    } catch (error) {
-      console.error('Error fetching email data:', error);
-    } finally {
-      setLoadingLogs(false);
-    }
-  };
-
-  const handleTestEmail = async () => {
-    try {
-      // We can trigger a test by inserting into a queue if we have the RPCs
-      // Or just send a password reset to current user as a test
-      const { error } = await supabase.auth.resetPasswordForEmail(session.user.email, {
-        redirectTo: `${window.location.origin}/auth/recovery`,
-      });
-      
-      if (error) throw error;
-      toast.success('Email de teste solicitado (Redefinição de senha). Verifique a fila em instantes.');
-      setTimeout(fetchEmailData, 2000);
-    } catch (error: any) {
-      toast.error('Erro ao enviar teste: ' + error.message);
-    }
+    const { data } = await supabase.from("email_send_log").select("*").order("created_at", { ascending: false }).limit(50);
+    setEmailLogs(data || []);
+    setLoadingLogs(false);
   };
 
   const fetchAdminUsers = async () => {
-    const { data, error } = await supabase.rpc('get_admin_users');
-    if (!error) {
-      setAdminUsers(data);
-    }
+    const { data } = await supabase.rpc("get_admin_users");
+    setAdminUsers(data || []);
   };
+
+  const deleteProductMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("products").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Produto excluído!");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   const handleAddAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newAdminEmail) return;
-
     try {
-      const { error } = await supabase.rpc('set_admin_by_email', {
-        user_email: newAdminEmail,
-        admin_status: true
-      });
-
+      const { error } = await supabase.rpc("set_admin_by_email", { user_email: newAdminEmail, admin_status: true });
       if (error) throw error;
-
-      toast.success(`${newAdminEmail} agora é um administrador!`);
-      setNewAdminEmail('');
+      toast.success(`${newAdminEmail} agora é administrador!`);
+      setNewAdminEmail("");
       fetchAdminUsers();
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao adicionar administrador');
+    } catch (e: any) {
+      toast.error(e.message);
     }
   };
 
   const handleRemoveAdmin = async (email: string) => {
-    if (email === session?.user?.email) {
-      toast.error('Você não pode remover a si mesmo como administrador.');
-      return;
-    }
-
-    if (confirm(`Tem certeza que deseja remover as permissões de admin de ${email}?`)) {
-      try {
-        const { error } = await supabase.rpc('set_admin_by_email', {
-          user_email: email,
-          admin_status: false
-        });
-
-        if (error) throw error;
-
-        toast.success(`Permissões de ${email} removidas.`);
-        fetchAdminUsers();
-      } catch (error: any) {
-        toast.error(error.message || 'Erro ao remover administrador');
-      }
+    if (email === session?.user?.email) return toast.error("Você não pode remover a si mesmo.");
+    if (!confirm(`Remover admin: ${email}?`)) return;
+    try {
+      await supabase.rpc("set_admin_by_email", { user_email: email, admin_status: false });
+      toast.success("Admin removido.");
+      fetchAdminUsers();
+    } catch (e: any) {
+      toast.error(e.message);
     }
   };
 
-  const { products, addProduct, updateProduct, deleteProduct, categories, addCategory, deleteCategory, heroProductIds, setHeroProductIds } = useAdminStore();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
-  if (!session) return null;
-
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleDelete = (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este produto?')) {
-      deleteProduct(id);
-      toast.success('Produto excluído com sucesso!');
-    }
-  };
-
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setIsFormOpen(true);
-  };
-
-  const handleAddNew = () => {
-    setEditingProduct(null);
-    setIsFormOpen(true);
-  };
+  const TABS: { id: Tab; label: string; icon: any }[] = [
+    { id: "products", label: "Produtos", icon: Package },
+    { id: "orders", label: "Pedidos", icon: ShoppingCart },
+    { id: "admins", label: "Admins", icon: ShieldCheck },
+    { id: "emails", label: "Emails", icon: Mail },
+  ];
 
   return (
     <div className="min-h-screen bg-[#0A0A0A] text-white pt-24 pb-12 px-4 sm:px-6 lg:px-8">
@@ -227,400 +144,67 @@ function AdminPage() {
         <header className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-purple-400 bg-clip-text text-transparent">
-              {activeTab === 'admins' ? 'Gerenciar Administradores' : 
-               activeTab === 'emails' ? 'Monitoramento de Emails' : 
-               'Painel Administrativo'}
+              Painel Administrativo
             </h1>
-            <p className="text-zinc-400 mt-1">
-              {activeTab === 'admins' ? 'Controle quem tem acesso ao painel de controle' : 
-               activeTab === 'emails' ? 'Acompanhe a fila e o status dos disparos' :
-               'Gerencie seu catálogo de produtos premium'}
-            </p>
+            <p className="text-zinc-400 mt-1">Gerenciamento completo da Grimm's Collection</p>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <Button 
-              variant={activeTab === 'products' ? "default" : "outline"}
-              onClick={() => setActiveTab('products')}
-              className={activeTab === 'products' ? "bg-[#8B00FF]" : "bg-black/40 border-white/10 text-white hover:bg-white/5 gap-2"}
-            >
-              <Package className="w-4 h-4" /> Produtos
-            </Button>
-            <Button 
-              variant={activeTab === 'admins' ? "default" : "outline"}
-              onClick={() => setActiveTab('admins')}
-              className={activeTab === 'admins' ? "bg-[#8B00FF]" : "bg-black/40 border-white/10 text-white hover:bg-white/5 gap-2"}
-            >
-              <ShieldCheck className="w-4 h-4" /> Admins
-            </Button>
-            <Button 
-              variant={activeTab === 'emails' ? "default" : "outline"}
-              onClick={() => setActiveTab('emails')}
-              className={activeTab === 'emails' ? "bg-[#8B00FF]" : "bg-black/40 border-white/10 text-white hover:bg-white/5 gap-2"}
-            >
-              <Mail className="w-4 h-4" /> Emails
-            </Button>
-            
-            {activeTab === 'products' && (
-              <Button 
-                onClick={handleAddNew}
-                className="bg-[#8B00FF] hover:bg-[#7000CC] text-white gap-2 shadow-[0_0_15px_rgba(139,0,255,0.3)] transition-all ml-auto md:ml-0"
+          <div className="flex flex-wrap gap-2">
+            {TABS.map((tab) => (
+              <Button
+                key={tab.id}
+                variant={activeTab === tab.id ? "default" : "outline"}
+                onClick={() => setActiveTab(tab.id)}
+                className={`gap-2 ${activeTab === tab.id ? "bg-[#8B00FF]" : "bg-black/40 border-white/10 text-white hover:bg-white/5"}`}
               >
-                <Plus className="w-4 h-4" /> Novo Produto
+                <tab.icon className="w-4 h-4" /> {tab.label}
               </Button>
-            )}
-            
-            {activeTab === 'emails' && (
-              <Button 
-                onClick={handleTestEmail}
-                className="bg-white/10 hover:bg-white/20 text-white gap-2 border border-white/10"
-              >
-                <RefreshCw className="w-4 h-4" /> Enviar Teste
+            ))}
+            {activeTab === "products" && (
+              <Button onClick={() => { setEditingProduct(null); setIsFormOpen(true); }} className="bg-[#8B00FF] hover:bg-[#7000CC] gap-2 ml-auto md:ml-0">
+                <Plus className="w-4 h-4" /> Novo Produto
               </Button>
             )}
           </div>
         </header>
 
-        {activeTab === 'admins' ? (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Add Admin Form */}
-            <div className="bg-[#111111] border border-white/5 rounded-2xl p-6">
-              <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                <UserPlus className="w-5 h-5 text-purple-400" /> Adicionar Novo Administrador
-              </h3>
-              <form onSubmit={handleAddAdmin} className="flex flex-col md:flex-row gap-4 items-end">
-                <div className="flex-1 space-y-2 w-full">
-                  <Label htmlFor="admin-email" className="text-zinc-400">Email do Usuário</Label>
-                  <Input 
-                    id="admin-email"
-                    type="email"
-                    placeholder="exemplo@email.com"
-                    className="bg-black/40 border-white/10 h-12 text-white placeholder:text-zinc-600 focus-visible:ring-[#8B00FF]/50"
-                    value={newAdminEmail}
-                    onChange={(e) => setNewAdminEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <Button 
-                  type="submit"
-                  className="bg-[#8B00FF] hover:bg-[#7000CC] text-white h-12 px-8 shadow-[0_0_15px_rgba(139,0,255,0.2)]"
-                >
-                  Tornar Admin
-                </Button>
-              </form>
-              <p className="text-xs text-zinc-500 mt-3">
-                O usuário deve ter uma conta criada no sistema antes de ser promovido a administrador.
-              </p>
-            </div>
+        {activeTab === "products" && (
+          <ProductsTab
+            products={filteredProducts}
+            allProducts={products}
+            searchTerm={searchTerm}
+            setSearchTerm={setSearchTerm}
+            heroProductIds={heroProductIds}
+            setHeroProductIds={setHeroProductIds}
+            onEdit={(p: Product) => { setEditingProduct(p); setIsFormOpen(true); }}
+            onDelete={(id: string) => { if (confirm("Excluir produto?")) deleteProductMutation.mutate(id); }}
+            loadingProducts={loadingProducts}
+          />
+        )}
 
-            {/* Admins List */}
-            <div className="bg-[#111111] border border-white/5 rounded-2xl overflow-hidden overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-white/5 text-zinc-400 text-xs uppercase tracking-wider font-semibold border-b border-white/5">
-                    <th className="px-6 py-4">Administrador</th>
-                    <th className="px-6 py-4">Email</th>
-                    <th className="px-6 py-4 text-right">Ações</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {adminUsers.map((admin) => (
-                    <tr key={admin.id} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
-                            <Users className="w-5 h-5 text-purple-400" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-white">{admin.full_name || admin.username || 'Sem nome'}</p>
-                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-green-500/10 text-green-400 border border-green-500/20">Ativo</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-zinc-400">{admin.email}</td>
-                      <td className="px-6 py-4 text-right">
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-8 w-8 text-zinc-400 hover:text-red-500 hover:bg-red-500/10"
-                          onClick={() => handleRemoveAdmin(admin.email)}
-                          disabled={admin.email === session?.user?.email}
-                          title={admin.email === session?.user?.email ? "Você não pode remover a si mesmo" : "Remover acesso admin"}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : activeTab === 'emails' ? (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Domain Status Card */}
-            <div className="bg-[#111111] border border-white/5 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-purple-400" /> Status do Domínio
-                </h3>
-                <span className="text-xs px-2 py-1 rounded bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> Verificação Pendente
-                </span>
-              </div>
-              <div className="bg-black/30 rounded-xl p-4 border border-white/5">
-                <p className="text-sm text-zinc-300">
-                  O domínio <span className="text-purple-400 font-mono">notify.grimmscollection.com.br</span> está aguardando a propagação DNS. 
-                  Certifique-se de que os registros CNAME e TXT fornecidos no painel Lovable Cloud foram adicionados corretamente ao seu provedor DNS.
-                </p>
-              </div>
-            </div>
+        {activeTab === "orders" && <OrdersTab />}
 
-            {/* Logs Table */}
-            <div className="bg-[#111111] border border-white/5 rounded-2xl overflow-hidden">
-              <div className="p-4 border-b border-white/5 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                  <History className="w-5 h-5 text-purple-400" /> Logs de Envio (Últimos 50)
-                </h3>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  onClick={fetchEmailData}
-                  className="text-zinc-400 hover:text-white"
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${loadingLogs ? 'animate-spin' : ''}`} /> Atualizar
-                </Button>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-white/5 text-zinc-400 text-xs uppercase tracking-wider font-semibold border-b border-white/5">
-                      <th className="px-6 py-4">Status</th>
-                      <th className="px-6 py-4">Destinatário</th>
-                      <th className="px-6 py-4">Modelo/Assunto</th>
-                      <th className="px-6 py-4">Data/Hora</th>
-                      <th className="px-6 py-4 text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {emailLogs.length > 0 ? (
-                      emailLogs.map((log) => (
-                        <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group">
-                          <td className="px-6 py-4">
-                            {log.status === 'sent' ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-green-500/10 text-green-400 border border-green-500/20">
-                                <CheckCircle2 className="w-3 h-3" /> Enviado
-                              </span>
-                            ) : log.status === 'failed' ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-red-500/10 text-red-400 border border-red-500/20">
-                                <AlertCircle className="w-3 h-3" /> Falhou
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
-                                <Clock className="w-3 h-3" /> {log.status}
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-zinc-300">{log.recipient_email}</td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-white">{log.template_name || 'Personalizado'}</div>
-                            {log.error_message && (
-                              <div className="text-[10px] text-red-400 truncate max-w-[200px]" title={log.error_message}>
-                                {log.error_message}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-xs text-zinc-500">
-                            {new Date(log.created_at).toLocaleString('pt-BR')}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-500 hover:text-white">
-                              <Search className="w-4 h-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
-                          <div className="flex flex-col items-center gap-2">
-                            <Mail className="w-8 h-8 opacity-20" />
-                            <p>Nenhum log de envio encontrado.</p>
-                            <p className="text-xs">Inicie disparos ou envie um teste para ver dados aqui.</p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <>
-        {/* Hero Section Configuration */}
-        <div className="bg-[#111111] border border-white/5 rounded-2xl p-6 mb-8">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-            <Layout className="w-5 h-5 text-purple-400" /> Destaques do Topo (Hero)
-          </h3>
-          <p className="text-sm text-zinc-400 mb-6">Selecione até 5 produtos para aparecerem no carrossel da página inicial.</p>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {products.map(product => {
-              const isSelected = heroProductIds?.includes(product.id);
-              return (
-                <div 
-                  key={product.id}
-                  onClick={() => {
-                    const currentIds = heroProductIds || [];
-                    if (isSelected) {
-                      setHeroProductIds(currentIds.filter(id => id !== product.id));
-                    } else if (currentIds.length < 5) {
-                      setHeroProductIds([...currentIds, product.id]);
-                    } else {
-                      toast.error('Limite de 5 produtos atingido.');
-                    }
-                  }}
-                  className={`relative p-3 rounded-xl border transition-all cursor-pointer group ${
-                    isSelected 
-                      ? 'bg-purple-500/10 border-purple-500/40' 
-                      : 'bg-black/20 border-white/5 hover:border-white/20'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-md overflow-hidden border border-white/10 flex-shrink-0">
-                      <img src={product.image} alt="" className="w-full h-full object-cover" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-white truncate">{product.name}</p>
-                      <p className="text-[10px] text-zinc-500">{product.category}</p>
-                    </div>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
-                      isSelected ? 'bg-purple-500 border-purple-500' : 'border-white/20'
-                    }`}>
-                      {isSelected && <CheckCircle2 className="w-3 h-3 text-white" />}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        {activeTab === "admins" && (
+          <AdminsTab
+            adminUsers={adminUsers}
+            newAdminEmail={newAdminEmail}
+            setNewAdminEmail={setNewAdminEmail}
+            onAdd={handleAddAdmin}
+            onRemove={handleRemoveAdmin}
+            session={session}
+          />
+        )}
 
-        {/* Search and Filters */}
-        <div className="bg-[#111111] border border-white/5 rounded-2xl p-4 mb-8 flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-            <Input 
-              placeholder="Buscar por nome ou categoria..."
-              className="bg-black/40 border-white/10 pl-10 h-12 text-white placeholder:text-zinc-600 focus-visible:ring-[#8B00FF]/50"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2 w-full md:w-auto">
-            <div className="px-4 py-2 bg-black/40 border border-white/10 rounded-lg text-sm text-zinc-400 flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              <span>{products.length} Produtos</span>
-            </div>
-          </div>
-        </div>
+        {activeTab === "emails" && (
+          <EmailsTab logs={emailLogs} loading={loadingLogs} onRefresh={fetchEmailData} />
+        )}
+      </div>
 
-        {/* Table/List */}
-        <div className="bg-[#111111] border border-white/5 rounded-2xl overflow-hidden overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr className="bg-white/5 text-zinc-400 text-xs uppercase tracking-wider font-semibold border-b border-white/5">
-                <th className="px-6 py-4">Produto</th>
-                <th className="px-6 py-4">Categoria</th>
-                <th className="px-6 py-4">Material</th>
-                <th className="px-6 py-4">Preço</th>
-                <th className="px-6 py-4 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {filteredProducts.map((product) => (
-                <tr key={product.id} className="hover:bg-white/[0.02] transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10 bg-black flex-shrink-0">
-                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-white truncate max-w-[200px]">{product.name}</p>
-                        <p className="text-xs text-zinc-500">ID: {product.id}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                      {product.category}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-zinc-400">{product.material}</td>
-                  <td className="px-6 py-4 font-semibold text-white">
-                    {product.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button 
-                        size="icon" 
-                        variant="ghost" 
-                        className="h-8 w-8 text-zinc-400 hover:text-white hover:bg-white/10"
-                        onClick={() => handleEdit(product)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <button 
-                        className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-colors"
-                        onClick={() => handleDelete(product.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredProducts.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-zinc-500">
-                    <div className="flex flex-col items-center gap-2">
-                      <Search className="w-8 h-8 opacity-20" />
-                      <p>Nenhum produto encontrado.</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </>
-    )}
-  </div>
-
-      {/* Product Form Drawer/Modal Overlay */}
       {isFormOpen && (
-        <ProductFormModal 
-          isOpen={isFormOpen} 
-          onClose={() => setIsFormOpen(false)} 
+        <ProductFormModal
           product={editingProduct}
-          categories={categories}
-          onAddCategory={addCategory}
-          onDeleteCategory={deleteCategory}
-          onSave={(data) => {
-            if (editingProduct) {
-              updateProduct(data);
-              toast.success('Produto atualizado!');
-            } else {
-              addProduct({
-                ...data,
-                id: data.id || Math.random().toString(36).substr(2, 9),
-                rating: 0,
-                reviews: 0,
-                popularity: 0,
-              });
-              toast.success('Produto adicionado!');
-            }
+          onClose={() => setIsFormOpen(false)}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["products"] });
             setIsFormOpen(false);
           }}
         />
@@ -629,410 +213,555 @@ function AdminPage() {
   );
 }
 
-interface ProductFormModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  product: Product | null;
-  categories: string[];
-  onAddCategory: (category: string) => void;
-  onDeleteCategory: (category: string) => void;
-  onSave: (data: Product) => void;
+/* ─── Products Tab ─── */
+function ProductsTab({ products, allProducts, searchTerm, setSearchTerm, heroProductIds, setHeroProductIds, onEdit, onDelete, loadingProducts }: any) {
+  return (
+    <>
+      {/* Hero selector */}
+      <div className="bg-[#111111] border border-white/5 rounded-2xl p-6 mb-8">
+        <h3 className="text-lg font-semibold text-white mb-1 flex items-center gap-2">
+          <Layout className="w-5 h-5 text-purple-400" /> Destaques do Topo (Hero)
+        </h3>
+        <p className="text-sm text-zinc-400 mb-4">Selecione até 5 produtos para o carrossel da página inicial.</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {allProducts.map((p: Product) => {
+            const selected = heroProductIds?.includes(p.id);
+            return (
+              <div
+                key={p.id}
+                onClick={() => {
+                  const ids: string[] = heroProductIds ?? [];
+                  if (selected) setHeroProductIds(ids.filter((id: string) => id !== p.id));
+                  else if (ids.length < 5) setHeroProductIds([...ids, p.id]);
+                  else toast.error("Limite de 5 produtos.");
+                }}
+                className={`p-2 rounded-xl border cursor-pointer transition-all ${selected ? "bg-purple-500/10 border-purple-500/40" : "bg-black/20 border-white/5 hover:border-white/20"}`}
+              >
+                <img src={p.image_url ?? "/products/product-1.jpg"} alt="" className="w-full aspect-square rounded-md object-cover mb-1.5" />
+                <p className="text-[10px] font-medium text-white truncate">{p.name}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="bg-[#111111] border border-white/5 rounded-2xl p-4 mb-6 flex gap-4 items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+          <Input placeholder="Buscar por nome ou categoria..." className="bg-black/40 border-white/10 pl-10 h-11 text-white" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        </div>
+        <div className="text-sm text-zinc-400 px-3">{products.length} produtos</div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-[#111111] border border-white/5 rounded-2xl overflow-hidden overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[700px]">
+          <thead>
+            <tr className="bg-white/5 text-zinc-400 text-xs uppercase tracking-wider font-semibold border-b border-white/5">
+              <th className="px-5 py-4">Produto</th>
+              <th className="px-5 py-4">Categoria</th>
+              <th className="px-5 py-4">Material</th>
+              <th className="px-5 py-4">Estoque</th>
+              <th className="px-5 py-4">Preço</th>
+              <th className="px-5 py-4 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {loadingProducts ? (
+              <tr><td colSpan={6} className="py-12 text-center text-zinc-500"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></td></tr>
+            ) : products.map((p: Product) => (
+              <tr key={p.id} className="hover:bg-white/[0.02] transition-colors group">
+                <td className="px-5 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/10 bg-black flex-shrink-0">
+                      <img src={p.image_url ?? "/products/product-1.jpg"} alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-white truncate max-w-[180px]">{p.name}</p>
+                      <p className="text-[10px] text-zinc-500">ID: {p.id}</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-5 py-4">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-500/10 text-purple-400 border border-purple-500/20">{p.category}</span>
+                </td>
+                <td className="px-5 py-4 text-zinc-400 text-sm">{p.material}</td>
+                <td className="px-5 py-4 text-sm">
+                  <span className={p.stock > 0 ? "text-green-400" : "text-red-400"}>{p.stock}</span>
+                </td>
+                <td className="px-5 py-4 font-semibold text-white">{formatBRL(p.price)}</td>
+                <td className="px-5 py-4 text-right">
+                  <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-white" onClick={() => onEdit(p)}><Edit className="w-4 h-4" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-red-500" onClick={() => onDelete(p.id)}><Trash2 className="w-4 h-4" /></Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!loadingProducts && products.length === 0 && (
+              <tr><td colSpan={6} className="py-12 text-center text-zinc-500">Nenhum produto encontrado.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
 }
 
-function ProductFormModal({ onClose, product, onSave, categories, onAddCategory, onDeleteCategory }: ProductFormModalProps) {
-  const [formData, setFormData] = useState<Partial<Product>>(
-    product || {
-      name: '',
-      price: 0,
-      category: 'Miniaturas e Figuras' as Category,
-      material: 'PLA' as Material,
-      description: '',
-      image: '',
-      gallery: [],
-      specs: [],
-      colors: [],
-      featured: false,
+/* ─── Orders Tab ─── */
+function OrdersTab() {
+  const queryClient = useQueryClient();
+  const [orders, setOrders] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [updating, setUpdating] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    loadOrders();
+  }, []);
+
+  const loadOrders = async () => {
+    setLoading(true);
+    const { data: rawOrders } = await supabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    const { data: items } = await supabase.from("order_items").select("*").in("order_id", (rawOrders ?? []).map((o) => o.id));
+    const data = (rawOrders ?? []).map((o) => ({ ...o, order_items: (items ?? []).filter((i) => i.order_id === o.id) }));
+    setOrders(data || []);
+    setLoading(false);
+  };
+
+  const updateStatus = async (orderId: string, status: string, tracking?: string) => {
+    setUpdating(orderId);
+    try {
+      await supabase.rpc("update_order_status", { order_id: orderId, new_status: status, new_tracking: tracking });
+      toast.success("Status atualizado!");
+      loadOrders();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setUpdating(null);
     }
+  };
+
+  const STATUS_OPTIONS = ["aguardando_pagamento", "pendente", "processando", "enviado", "entregue", "cancelado"];
+  const STATUS_COLORS: Record<string, string> = {
+    aguardando_pagamento: "text-orange-400 bg-orange-400/10 border-orange-400/20",
+    pendente: "text-yellow-400 bg-yellow-400/10 border-yellow-400/20",
+    processando: "text-blue-400 bg-blue-400/10 border-blue-400/20",
+    enviado: "text-purple-400 bg-purple-400/10 border-purple-400/20",
+    entregue: "text-green-400 bg-green-400/10 border-green-400/20",
+    cancelado: "text-red-400 bg-red-400/10 border-red-400/20",
+  };
+
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-purple-400" /></div>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-zinc-400 text-sm">{orders.length} pedido{orders.length !== 1 && "s"}</p>
+        <Button size="sm" variant="ghost" className="text-zinc-400" onClick={loadOrders}><RefreshCw className="w-4 h-4 mr-1" /> Atualizar</Button>
+      </div>
+
+      {orders.length === 0 ? (
+        <div className="text-center py-16 text-zinc-500">
+          <ShoppingCart className="w-10 h-10 mx-auto mb-3 opacity-20" />
+          <p>Nenhum pedido encontrado.</p>
+        </div>
+      ) : orders.map((order) => (
+        <div key={order.id} className="bg-[#111111] border border-white/5 rounded-xl overflow-hidden">
+          <div className="p-4 border-b border-white/5 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-mono text-xs text-zinc-400">#{order.id.slice(0, 8).toUpperCase()}</p>
+              <p className="text-sm text-white mt-0.5">{order.shipping_name}</p>
+              <p className="text-xs text-zinc-500">{new Date(order.created_at).toLocaleString("pt-BR")}</p>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <select
+                className={`text-xs px-2.5 py-1 rounded-full border font-bold bg-transparent cursor-pointer ${STATUS_COLORS[order.status] ?? "text-zinc-400 border-zinc-400/20"}`}
+                value={order.status}
+                disabled={updating === order.id}
+                onChange={(e) => updateStatus(order.id, e.target.value)}
+              >
+                {STATUS_OPTIONS.map((s) => <option key={s} value={s} className="bg-[#111] text-white">{s}</option>)}
+              </select>
+              <span className="font-black text-white">{formatBRL(order.total)}</span>
+            </div>
+          </div>
+
+          <div className="p-4 space-y-2">
+            {(order.order_items as any[]).map((item: any) => (
+              <div key={item.id} className="flex items-center gap-3 text-sm">
+                {item.product_image && <img src={item.product_image} alt="" className="h-8 w-8 rounded object-cover" />}
+                <span className="flex-1 text-zinc-300 truncate">{item.product_name}</span>
+                <span className="text-zinc-500">x{item.quantity}</span>
+                <span className="text-zinc-400">{formatBRL(item.total_price)}</span>
+              </div>
+            ))}
+          </div>
+
+          <div className="px-4 pb-4 border-t border-white/5 pt-3 flex flex-wrap items-center justify-between gap-3">
+            <div className="text-xs text-zinc-500">
+              <p>{order.shipping_service}</p>
+              <p>{order.shipping_city}/{order.shipping_state} — CEP {order.shipping_cep}</p>
+            </div>
+            {order.status === "enviado" && (
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="Código de rastreio"
+                  className="h-8 text-xs bg-black/40 border-white/10 w-40"
+                  defaultValue={order.tracking_code || ""}
+                  onBlur={(e) => { if (e.target.value !== order.tracking_code) updateStatus(order.id, order.status, e.target.value); }}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── Admins Tab ─── */
+function AdminsTab({ adminUsers, newAdminEmail, setNewAdminEmail, onAdd, onRemove, session }: any) {
+  return (
+    <div className="space-y-8">
+      <div className="bg-[#111111] border border-white/5 rounded-2xl p-6">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <UserPlus className="w-5 h-5 text-purple-400" /> Adicionar Administrador
+        </h3>
+        <form onSubmit={onAdd} className="flex flex-col md:flex-row gap-4">
+          <Input type="email" placeholder="email@exemplo.com" value={newAdminEmail} onChange={(e) => setNewAdminEmail(e.target.value)} className="bg-black/40 border-white/10 h-11 text-white flex-1" required />
+          <Button type="submit" className="bg-[#8B00FF] hover:bg-[#7000CC] h-11 px-8">Tornar Admin</Button>
+        </form>
+      </div>
+      <div className="bg-[#111111] border border-white/5 rounded-2xl overflow-hidden overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead><tr className="bg-white/5 text-zinc-400 text-xs uppercase tracking-wider border-b border-white/5">
+            <th className="px-6 py-4">Administrador</th>
+            <th className="px-6 py-4">Email</th>
+            <th className="px-6 py-4 text-right">Ações</th>
+          </tr></thead>
+          <tbody className="divide-y divide-white/5">
+            {adminUsers.map((admin: any) => (
+              <tr key={admin.id} className="hover:bg-white/[0.02]">
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20">
+                      <Users className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <p className="font-medium text-white">{admin.full_name || admin.username || "Sem nome"}</p>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-zinc-400">{admin.email}</td>
+                <td className="px-6 py-4 text-right">
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-zinc-400 hover:text-red-500" onClick={() => onRemove(admin.email)} disabled={admin.email === session?.user?.email}><Trash2 className="w-4 h-4" /></Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Emails Tab ─── */
+function EmailsTab({ logs, loading, onRefresh }: any) {
+  return (
+    <div className="bg-[#111111] border border-white/5 rounded-2xl overflow-hidden">
+      <div className="p-4 border-b border-white/5 flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-white flex items-center gap-2"><History className="w-5 h-5 text-purple-400" /> Logs de Envio</h3>
+        <Button size="sm" variant="ghost" onClick={onRefresh} className="text-zinc-400"><RefreshCw className={`w-4 h-4 mr-1 ${loading ? "animate-spin" : ""}`} /> Atualizar</Button>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead><tr className="bg-white/5 text-zinc-400 text-xs uppercase tracking-wider border-b border-white/5">
+            <th className="px-6 py-4">Status</th>
+            <th className="px-6 py-4">Destinatário</th>
+            <th className="px-6 py-4">Template</th>
+            <th className="px-6 py-4">Data</th>
+          </tr></thead>
+          <tbody className="divide-y divide-white/5">
+            {logs.length === 0 ? (
+              <tr><td colSpan={4} className="py-12 text-center text-zinc-500"><Mail className="w-8 h-8 mx-auto mb-2 opacity-20" />Nenhum log.</td></tr>
+            ) : logs.map((log: any) => (
+              <tr key={log.id} className="hover:bg-white/[0.02]">
+                <td className="px-6 py-4">
+                  {log.status === "sent"
+                    ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-green-500/10 text-green-400 border border-green-500/20"><CheckCircle2 className="w-3 h-3" /> Enviado</span>
+                    : log.status === "failed"
+                    ? <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-red-500/10 text-red-400 border border-red-500/20"><AlertCircle className="w-3 h-3" /> Falhou</span>
+                    : <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-yellow-500/10 text-yellow-400 border border-yellow-500/20"><Clock className="w-3 h-3" /> {log.status}</span>}
+                </td>
+                <td className="px-6 py-4 text-sm text-zinc-300">{log.recipient_email}</td>
+                <td className="px-6 py-4 text-sm text-white">{log.template_name}</td>
+                <td className="px-6 py-4 text-xs text-zinc-500">{new Date(log.created_at).toLocaleString("pt-BR")}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Product Form Modal ─── */
+interface ProductFormProps {
+  product: Product | null;
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+function ProductFormModal({ product, onClose, onSaved }: ProductFormProps) {
+  const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [form, setForm] = useState<Partial<Product> & { id: string }>(
+    product
+      ? { ...product }
+      : {
+          id: "",
+          name: "",
+          price: 0,
+          category: "Miniaturas e Figuras" as Category,
+          material: "PLA" as Material,
+          description: "",
+          image_url: "",
+          gallery: [],
+          specs: [],
+          colors: [],
+          featured: false,
+          hero: false,
+          stock: 0,
+          active: true,
+          rating: 0,
+          reviews: 0,
+          popularity: 0,
+        }
   );
 
-  const [newSpec, setNewSpec] = useState({ label: '', value: '' });
-  const [newColor, setNewColor] = useState({ name: '', hex: '#8B00FF' });
+  const [newSpec, setNewSpec] = useState({ label: "", value: "" });
+  const [newColor, setNewColor] = useState({ name: "", hex: "#8B00FF" });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  async function uploadImage(file: File, field: "main" | "gallery") {
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${form.id || Date.now()}-${Date.now()}.${ext}`;
+      const { error: uploadErr } = await supabase.storage.from("products").upload(path, file, { upsert: true });
+      if (uploadErr) throw uploadErr;
+      const { data: { publicUrl } } = supabase.storage.from("products").getPublicUrl(path);
+      if (field === "main") {
+        setForm((p) => ({ ...p, image_url: publicUrl }));
+      } else {
+        setForm((p) => ({ ...p, gallery: [...(p.gallery || []), publicUrl] }));
+      }
+      toast.success("Imagem carregada!");
+    } catch (e: any) {
+      toast.error("Erro ao fazer upload: " + e.message);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (!formData.name || !formData.price || !formData.category || !formData.image) {
-      toast.error('Preencha os campos obrigatórios');
+    if (!form.name || !form.price || !form.category) return toast.error("Preencha os campos obrigatórios.");
+    if (!form.id && !product) {
+      toast.error("ID do produto é obrigatório (slug único).");
       return;
     }
-    onSave(formData as Product);
-  };
+    setSaving(true);
+    try {
+      const payload = {
+        id: form.id,
+        name: form.name!,
+        price: form.price!,
+        category: form.category!,
+        material: form.material ?? "PLA",
+        description: form.description,
+        image_url: form.image_url,
+        gallery: form.gallery || [],
+        specs: form.specs || [],
+        colors: form.colors || [],
+        featured: form.featured ?? false,
+        hero: form.hero ?? false,
+        popularity: form.popularity ?? 0,
+        stock: form.stock ?? 0,
+        active: form.active ?? true,
+      };
 
-  const addSpec = (label?: string, value?: string) => {
-    const l = label || newSpec.label;
-    const v = value || newSpec.value;
-    
-    // Allow adding shortcut specs even with empty values
-    if (l) {
-      setFormData(prev => ({
-        ...prev,
-        specs: [...(prev.specs || []), { label: l, value: v || '-' }]
-      }));
-      if (!label) setNewSpec({ label: '', value: '' });
+      if (product) {
+        const { error } = await supabase.from("products").update(payload).eq("id", product.id);
+        if (error) throw error;
+        toast.success("Produto atualizado!");
+      } else {
+        const { error } = await supabase.from("products").insert(payload);
+        if (error) throw error;
+        toast.success("Produto criado!");
+      }
+      onSaved();
+    } catch (e: any) {
+      toast.error(e.message);
+    } finally {
+      setSaving(false);
     }
-  };
-
-  const removeSpec = (index: number) => {
-    setFormData({
-      ...formData,
-      specs: (formData.specs || []).filter((_, i) => i !== index)
-    });
-  };
-
-  const addColor = () => {
-    if (newColor.name && newColor.hex) {
-      setFormData({
-        ...formData,
-        colors: [...(formData.colors || []), { ...newColor }]
-      });
-      setNewColor({ name: '', hex: '#8B00FF' });
-    }
-  };
-
-  const removeColor = (index: number) => {
-    setFormData({
-      ...formData,
-      colors: (formData.colors || []).filter((_, i) => i !== index)
-    });
-  };
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={onClose} />
-      <div className="relative w-full max-w-4xl bg-[#0F0F0F] border border-white/10 rounded-2xl shadow-[0_0_50px_rgba(139,0,255,0.15)] overflow-hidden max-h-[95vh] flex flex-col">
-        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-black/40">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-500/10 rounded-lg">
-              {product ? <Edit className="w-5 h-5 text-[#8B00FF]" /> : <Plus className="w-5 h-5 text-[#8B00FF]" />}
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-white">
-                {product ? 'Editar Produto' : 'Novo Produto'}
-              </h2>
-              <p className="text-xs text-zinc-500">Configure os detalhes do seu item premium</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg transition-colors group">
-            <X className="w-5 h-5 text-zinc-500 group-hover:text-white" />
-          </button>
+      <div className="relative w-full max-w-4xl bg-[#0F0F0F] border border-white/10 rounded-2xl shadow-xl overflow-hidden max-h-[95vh] flex flex-col">
+        <div className="p-5 border-b border-white/5 flex items-center justify-between bg-black/40">
+          <h2 className="text-xl font-bold text-white">{product ? "Editar Produto" : "Novo Produto"}</h2>
+          <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white"><X className="w-5 h-5" /></button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-thin scrollbar-thumb-white/10">
-          {/* Sessão: Informações Básicas */}
-          <section className="space-y-6">
-            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
-              <Package className="w-4 h-4" /> Informações Básicas
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-zinc-400">Nome do Produto *</Label>
-                <Input 
-                  id="name"
-                  className="bg-black/60 border-white/10 focus:border-purple-500/50 transition-colors"
-                  value={formData.name}
-                  onChange={e => setFormData({...formData, name: e.target.value})}
-                  placeholder="Ex: Capacete Dragon"
-                />
+        <form onSubmit={handleSave} className="flex-1 overflow-y-auto p-6 space-y-6">
+          {/* Básico */}
+          <section className="space-y-4">
+            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2"><Package className="w-4 h-4" /> Informações Básicas</h3>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-zinc-400">ID / Slug *</Label>
+                <Input className="bg-black/60 border-white/10" value={form.id} onChange={(e) => setForm((p) => ({ ...p, id: e.target.value.toLowerCase().replace(/\s+/g, "-") }))} placeholder="meu-produto-unico" disabled={!!product} />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="price" className="text-zinc-400">Preço (R$) *</Label>
-                <Input 
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  className="bg-black/60 border-white/10 focus:border-purple-500/50 transition-colors"
-                  value={formData.price}
-                  onChange={e => setFormData({...formData, price: parseFloat(e.target.value)})}
-                />
+              <div className="space-y-1.5">
+                <Label className="text-zinc-400">Nome *</Label>
+                <Input className="bg-black/60 border-white/10" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} placeholder="Nome do produto" />
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="text-zinc-400">Categoria *</Label>
-                  <div className="space-y-3">
-                    <div className="flex gap-2">
-                      <select 
-                        className="flex-1 h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                        value={formData.category}
-                        onChange={e => setFormData({...formData, category: e.target.value as Category})}
-                      >
-                        {categories.map(cat => (
-                          <option key={cat} value={cat} className="bg-[#0F0F0F]">{cat}</option>
-                        ))}
-                      </select>
-                      <Input 
-                        placeholder="Criar nova..."
-                        className="w-32 bg-black/60 border-white/10 text-sm"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            const val = e.currentTarget.value.trim();
-                            if (val) {
-                              onAddCategory(val);
-                              setFormData({...formData, category: val as Category});
-                              e.currentTarget.value = '';
-                              toast.success(`Categoria "${val}" adicionada!`);
-                            }
-                          }
-                        }}
-                      />
-                    </div>
-                    
-                    {/* Lista de categorias para exclusão */}
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {categories.map(cat => (
-                        <div key={cat} className="group flex items-center gap-1.5 px-2 py-1 rounded-md bg-white/5 border border-white/5 text-[10px] text-zinc-400">
-                          {cat}
-                          <button 
-                            type="button" 
-                            onClick={() => {
-                              if (confirm(`Excluir categoria "${cat}"?`)) {
-                                onDeleteCategory(cat);
-                                if (formData.category === cat) {
-                                  setFormData({...formData, category: categories.find(c => c !== cat) as Category || ''});
-                                }
-                                toast.success('Categoria excluída');
-                              }
-                            }}
-                            className="text-zinc-600 hover:text-red-500 transition-colors"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              <div className="space-y-2">
-                <Label className="text-zinc-400">Material *</Label>
-                <select 
-                  className="w-full h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none focus:ring-1 focus:ring-purple-500/50 transition-colors"
-                  value={formData.material}
-                  onChange={e => setFormData({...formData, material: e.target.value as Material})}
-                >
-                  {MATERIALS.map(mat => (
-                    <option key={mat} value={mat} className="bg-[#0F0F0F]">{mat}</option>
-                  ))}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-zinc-400">Preço (R$) *</Label>
+                <Input type="number" step="0.01" className="bg-black/60 border-white/10" value={form.price} onChange={(e) => setForm((p) => ({ ...p, price: parseFloat(e.target.value) }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-zinc-400">Estoque</Label>
+                <Input type="number" className="bg-black/60 border-white/10" value={form.stock} onChange={(e) => setForm((p) => ({ ...p, stock: parseInt(e.target.value) }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-zinc-400">Material</Label>
+                <select className="w-full h-10 px-3 rounded-md bg-black/60 border border-white/10 text-sm text-white focus:outline-none" value={form.material} onChange={(e) => setForm((p) => ({ ...p, material: e.target.value as Material }))}>
+                  {MATERIALS.map((m) => <option key={m} value={m} className="bg-[#0F0F0F]">{m}</option>)}
                 </select>
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input 
-                type="checkbox" 
-                id="featured" 
-                checked={formData.featured}
-                onChange={e => setFormData({...formData, featured: e.target.checked})}
-                className="w-4 h-4 rounded border-white/10 bg-black text-purple-600 focus:ring-purple-500/50"
-              />
-              <Label htmlFor="featured" className="text-zinc-400 cursor-pointer select-none">Produto em Destaque (Home)</Label>
+            <div className="space-y-1.5">
+              <Label className="text-zinc-400">Categoria *</Label>
+              <Input className="bg-black/60 border-white/10" value={form.category} onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))} placeholder="Ex: Miniaturas e Figuras" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-zinc-400">Descrição</Label>
+              <Textarea className="bg-black/60 border-white/10 min-h-[100px]" value={form.description ?? ""} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
+            </div>
+
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.featured ?? false} onChange={(e) => setForm((p) => ({ ...p, featured: e.target.checked }))} className="w-4 h-4 rounded text-purple-600" />
+                <span className="text-sm text-zinc-400">Produto em Destaque</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.hero ?? false} onChange={(e) => setForm((p) => ({ ...p, hero: e.target.checked }))} className="w-4 h-4 rounded text-purple-600" />
+                <span className="text-sm text-zinc-400">Aparece no Hero</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.active ?? true} onChange={(e) => setForm((p) => ({ ...p, active: e.target.checked }))} className="w-4 h-4 rounded text-purple-600" />
+                <span className="text-sm text-zinc-400">Ativo</span>
+              </label>
             </div>
           </section>
 
-          {/* Sessão: Mídia e Descrição */}
-          <section className="space-y-6 pt-6 border-t border-white/5">
-            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
-              <Layout className="w-4 h-4" /> Mídia e Conteúdo
-            </h3>
-                <div className="space-y-2">
-                  <Label htmlFor="image" className="text-zinc-400">URL da Imagem ou Upload Local *</Label>
-                  <div className="flex gap-4">
-                    <Input 
-                      id="image"
-                      className="bg-black/60 border-white/10 focus:border-purple-500/50 flex-1"
-                      value={formData.image}
-                      onChange={e => setFormData({...formData, image: e.target.value})}
-                      placeholder="https://..."
-                    />
-                    <div className="relative">
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onloadend = () => {
-                              setFormData({...formData, image: reader.result as string});
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                      />
-                      <Button type="button" variant="outline" className="border-white/10 text-xs">
-                        Upload
-                      </Button>
-                    </div>
-                {formData.image && (
-                  <div className="w-10 h-10 rounded-md border border-white/10 overflow-hidden bg-black flex-shrink-0">
-                    <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
+          {/* Imagens */}
+          <section className="space-y-4 pt-4 border-t border-white/5">
+            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2"><Layout className="w-4 h-4" /> Imagens</h3>
+
+            <div className="space-y-2">
+              <Label className="text-zinc-400">Imagem Principal</Label>
+              <div className="flex gap-3 items-center">
+                <Input className="bg-black/60 border-white/10 flex-1" value={form.image_url ?? ""} onChange={(e) => setForm((p) => ({ ...p, image_url: e.target.value }))} placeholder="URL ou faça upload abaixo" />
+                <label className="relative cursor-pointer">
+                  <input type="file" accept="image/*" className="absolute inset-0 opacity-0 w-full cursor-pointer" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(f, "main"); }} />
+                  <Button type="button" variant="outline" className="border-white/10 gap-1.5" disabled={uploading}>
+                    {uploading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />} Upload
+                  </Button>
+                </label>
+                {form.image_url && <img src={form.image_url} alt="" className="h-10 w-10 rounded-md object-cover border border-white/10" />}
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description" className="text-zinc-400">Descrição Detalhada</Label>
-              <Textarea 
-                id="description"
-                className="bg-black/60 border-white/10 min-h-[120px] focus:border-purple-500/50"
-                value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value})}
-                placeholder="Conte a história deste produto, detalhes técnicos, etc..."
-              />
-            </div>
-          </section>
-
-          {/* Sessão: Especificações Técnicas */}
-          <section className="space-y-6 pt-6 border-t border-white/5">
-            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
-              <Layers className="w-4 h-4" /> Especificações Técnicas
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
-              <div className="space-y-2">
-                <Label className="text-xs text-zinc-500">Rótulo (ex: Altura)</Label>
-                <Input 
-                  placeholder="Label" 
-                  value={newSpec.label} 
-                  onChange={e => setNewSpec({...newSpec, label: e.target.value})}
-                  className="bg-black/60 border-white/10 h-9 text-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-zinc-500">Valor (ex: 75mm)</Label>
-                <Input 
-                  placeholder="Valor" 
-                  value={newSpec.value} 
-                  onChange={e => setNewSpec({...newSpec, value: e.target.value})}
-                  className="bg-black/60 border-white/10 h-9 text-sm"
-                />
-              </div>
-              <Button type="button" onClick={() => addSpec()} className="bg-white/5 hover:bg-white/10 text-white h-9 border border-white/10">
-                Adicionar Spec
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 border-t border-white/5 pt-4">
-              <div className="space-y-2">
-                <Label className="text-xs text-zinc-500 italic">Atalhos rápidos:</Label>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Tamanho', ' ')}>+ Tamanho</Button>
-                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Material', ' ')}>+ Material</Button>
-                  <Button type="button" size="sm" variant="outline" className="text-[10px] h-7 border-purple-500/20 hover:bg-purple-500/10" onClick={() => addSpec('Peso', ' ')}>+ Peso</Button>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
-              {(formData.specs || []).map((spec, idx) => {
-                const isShortcutSpec = ['Tamanho', 'Material', 'Peso'].includes(spec.label);
-                return (
-                  <div key={idx} className="flex items-center gap-2 p-3 bg-black/40 border border-white/5 rounded-lg group">
-                    <div className="flex-1 grid grid-cols-2 gap-2">
-                      {isShortcutSpec ? (
-                        <div className="h-8 flex items-center text-xs text-zinc-500 font-medium select-none px-0">
-                          {spec.label}
-                        </div>
-                      ) : (
-                        <Input 
-                          className="h-8 bg-transparent border-none text-xs text-zinc-500 p-0 focus-visible:ring-0" 
-                          value={spec.label} 
-                          onChange={(e) => {
-                            const newSpecs = [...(formData.specs || [])];
-                            newSpecs[idx].label = e.target.value;
-                            setFormData({...formData, specs: newSpecs});
-                          }}
-                        />
-                      )}
-                      <Input 
-                        className="h-8 bg-transparent border-none text-xs text-white p-0 focus-visible:ring-0 font-medium placeholder:text-zinc-600/50" 
-                        value={spec.value === ' ' ? '' : spec.value} 
-                        placeholder={isShortcutSpec ? spec.label : "Definir valor..."}
-                        onChange={(e) => {
-                          const newSpecs = [...(formData.specs || [])];
-                          newSpecs[idx].value = e.target.value;
-                          setFormData({...formData, specs: newSpecs});
-                        }}
-                      />
-                    </div>
-                    <button type="button" onClick={() => removeSpec(idx)} className="p-1 text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+              <Label className="text-zinc-400">Galeria</Label>
+              <div className="flex flex-wrap gap-2">
+                {(form.gallery || []).map((url, i) => (
+                  <div key={i} className="relative group">
+                    <img src={url} alt="" className="h-16 w-16 rounded-md object-cover border border-white/10" />
+                    <button type="button" onClick={() => setForm((p) => ({ ...p, gallery: p.gallery?.filter((_, idx) => idx !== i) }))} className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center opacity-0 group-hover:opacity-100"><X className="w-3 h-3" /></button>
                   </div>
-                );
-              })}
+                ))}
+                <label className="h-16 w-16 rounded-md border border-dashed border-white/20 flex flex-col items-center justify-center cursor-pointer hover:border-white/40 transition-colors">
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(f, "gallery"); }} />
+                  {uploading ? <Loader2 className="w-4 h-4 animate-spin text-zinc-500" /> : <Plus className="w-4 h-4 text-zinc-500" />}
+                </label>
+              </div>
             </div>
           </section>
 
-          {/* Sessão: Cores */}
-          <section className="space-y-6 pt-6 border-t border-white/5">
-            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2">
-              <Palette className="w-4 h-4" /> Opções de Cores
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 items-end">
-              <div className="space-y-2">
-                <Label className="text-xs text-zinc-500">Nome da Cor</Label>
-                <Input 
-                  placeholder="Nome" 
-                  value={newColor.name} 
-                  onChange={e => setNewColor({...newColor, name: e.target.value})}
-                  className="bg-black/60 border-white/10 h-9 text-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs text-zinc-500">Cor Hex</Label>
-                <div className="flex gap-2">
-                  <Input 
-                    type="color" 
-                    value={newColor.hex} 
-                    onChange={e => setNewColor({...newColor, hex: e.target.value})}
-                    className="w-10 h-9 p-0 bg-transparent border-none"
-                  />
-                  <Input 
-                    placeholder="#000000" 
-                    value={newColor.hex} 
-                    onChange={e => setNewColor({...newColor, hex: e.target.value})}
-                    className="bg-black/60 border-white/10 h-9 text-sm flex-1"
-                  />
-                </div>
-              </div>
-              <Button type="button" onClick={addColor} className="bg-white/5 hover:bg-white/10 text-white h-9 border border-white/10">
-                Adicionar Cor
-              </Button>
+          {/* Specs */}
+          <section className="space-y-4 pt-4 border-t border-white/5">
+            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2"><Layers className="w-4 h-4" /> Especificações</h3>
+            <div className="grid grid-cols-3 gap-3 items-end">
+              <div className="space-y-1"><Label className="text-xs text-zinc-500">Label</Label><Input placeholder="Altura" value={newSpec.label} onChange={(e) => setNewSpec((p) => ({ ...p, label: e.target.value }))} className="bg-black/60 border-white/10 h-9 text-sm" /></div>
+              <div className="space-y-1"><Label className="text-xs text-zinc-500">Valor</Label><Input placeholder="75mm" value={newSpec.value} onChange={(e) => setNewSpec((p) => ({ ...p, value: e.target.value }))} className="bg-black/60 border-white/10 h-9 text-sm" /></div>
+              <Button type="button" onClick={() => { if (newSpec.label) { setForm((p) => ({ ...p, specs: [...(p.specs || []), { ...newSpec }] })); setNewSpec({ label: "", value: "" }); } }} className="bg-white/5 hover:bg-white/10 border border-white/10 h-9">Adicionar</Button>
             </div>
-
-            <div className="flex flex-wrap gap-2 mt-4">
-              {(formData.colors || []).map((color, idx) => (
-                <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-white/5 rounded-full group">
-                  <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: color.hex }} />
-                  <span className="text-xs text-zinc-300">{color.name}</span>
-                  <button type="button" onClick={() => removeColor(idx)} className="text-zinc-600 hover:text-red-500 ml-1">
-                    <X className="w-3 h-3" />
-                  </button>
+            <div className="grid grid-cols-2 gap-2">
+              {(form.specs || []).map((spec, idx) => (
+                <div key={idx} className="flex items-center gap-2 p-2 bg-black/40 border border-white/5 rounded-lg group">
+                  <span className="text-xs text-zinc-500 flex-1">{spec.label}: <span className="text-white">{spec.value}</span></span>
+                  <button type="button" onClick={() => setForm((p) => ({ ...p, specs: p.specs?.filter((_, i) => i !== idx) }))} className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-500"><X className="w-3 h-3" /></button>
                 </div>
               ))}
             </div>
           </section>
 
-          {/* Ações do Rodapé */}
-          <div className="pt-8 border-t border-white/5 flex gap-4">
-             <Button type="button" variant="ghost" className="flex-1 border border-white/10 text-zinc-400 hover:text-white" onClick={onClose}>
-               Descartar
-             </Button>
-             <Button type="submit" className="flex-1 bg-[#8B00FF] hover:bg-[#7000CC] text-white shadow-[0_0_20px_rgba(139,0,255,0.3)]">
-               {product ? 'Salvar Alterações' : 'Publicar Produto'}
-             </Button>
+          {/* Colors */}
+          <section className="space-y-4 pt-4 border-t border-white/5">
+            <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-2"><Palette className="w-4 h-4" /> Cores</h3>
+            <div className="grid grid-cols-3 gap-3 items-end">
+              <div className="space-y-1"><Label className="text-xs text-zinc-500">Nome</Label><Input placeholder="Preto Mate" value={newColor.name} onChange={(e) => setNewColor((p) => ({ ...p, name: e.target.value }))} className="bg-black/60 border-white/10 h-9 text-sm" /></div>
+              <div className="space-y-1"><Label className="text-xs text-zinc-500">Hex</Label>
+                <div className="flex gap-2">
+                  <input type="color" value={newColor.hex} onChange={(e) => setNewColor((p) => ({ ...p, hex: e.target.value }))} className="w-9 h-9 p-0 bg-transparent border-none rounded cursor-pointer" />
+                  <Input value={newColor.hex} onChange={(e) => setNewColor((p) => ({ ...p, hex: e.target.value }))} className="bg-black/60 border-white/10 h-9 text-sm" />
+                </div>
+              </div>
+              <Button type="button" onClick={() => { if (newColor.name) { setForm((p) => ({ ...p, colors: [...(p.colors || []), { ...newColor }] })); setNewColor({ name: "", hex: "#8B00FF" }); } }} className="bg-white/5 hover:bg-white/10 border border-white/10 h-9">Adicionar</Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(form.colors || []).map((c, idx) => (
+                <div key={idx} className="flex items-center gap-1.5 px-3 py-1.5 bg-black/40 border border-white/5 rounded-full group">
+                  <span className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: c.hex }} />
+                  <span className="text-xs text-zinc-300">{c.name}</span>
+                  <button type="button" onClick={() => setForm((p) => ({ ...p, colors: p.colors?.filter((_, i) => i !== idx) }))} className="text-zinc-600 hover:text-red-500 ml-1"><X className="w-3 h-3" /></button>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <div className="pt-4 border-t border-white/5 flex gap-3">
+            <Button type="button" variant="ghost" onClick={onClose} className="flex-1 border border-white/10 text-zinc-400">Cancelar</Button>
+            <Button type="submit" disabled={saving} className="flex-1 bg-[#8B00FF] hover:bg-[#7000CC]">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {product ? "Salvar Alterações" : "Publicar Produto"}
+            </Button>
           </div>
         </form>
       </div>

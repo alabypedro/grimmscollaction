@@ -1,104 +1,46 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Star, Plus, Minus, Shield, Truck, Sparkles, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Minus, Shield, Truck, Sparkles, Send, Loader2 } from "lucide-react";
 import { StarRating } from "@/components/StarRating";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { PRODUCTS, type Product } from "@/lib/products";
-import { useAdminStore } from "@/lib/admin-store";
+import { useProduct, useProducts } from "@/lib/use-products";
 import { formatBRL, useCart } from "@/lib/cart";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/produto/$id")({
-  loader: ({ params }) => {
-    const product = PRODUCTS.find((p) => p.id === params.id);
-    return { id: params.id, product };
-  },
-  head: ({ params, loaderData }) => {
+  loader: ({ params }) => ({ id: params.id }),
+  head: ({ params }) => {
     const url = `https://grimmscollaction.lovable.app/produto/${params.id}`;
-    const product = loaderData?.product;
-    const title = product
-      ? `${product.name} — Grimm's Collection`.slice(0, 60)
-      : "Produto — Grimm's Collection";
-    const description = product
-      ? product.description.slice(0, 158)
-      : "Peça impressa em 3D premium da Grimm's Collection.";
-    const image = product?.image
-      ? (product.image.startsWith("http") ? product.image : `https://grimmscollaction.lovable.app${product.image}`)
-      : undefined;
-
-    const meta: Array<Record<string, string>> = [
-      { title },
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:url", content: url },
-      { property: "og:type", content: "product" },
-    ];
-    if (image) {
-      meta.push({ property: "og:image", content: image });
-      meta.push({ name: "twitter:image", content: image });
-    }
-
-    const scripts: Array<{ type: string; children: string }> = [];
-    if (product) {
-      scripts.push({
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Product",
-          name: product.name,
-          description: product.description,
-          image: image ? [image] : undefined,
-          category: product.category,
-          offers: {
-            "@type": "Offer",
-            price: product.price,
-            priceCurrency: "BRL",
-            availability: "https://schema.org/InStock",
-            url,
-          },
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: product.rating,
-            reviewCount: product.reviews,
-          },
-        }),
-      });
-    }
-
     return {
-      meta,
+      meta: [
+        { title: `Produto — Grimm's Collection` },
+        { name: "description", content: "Peça impressa em 3D premium da Grimm's Collection." },
+        { property: "og:url", content: url },
+        { property: "og:type", content: "product" },
+      ],
       links: [{ rel: "canonical", href: url }],
-      scripts,
     };
   },
   notFoundComponent: () => (
     <div className="container mx-auto py-32 text-center">
       <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
-      <Link to="/loja" className="text-primary hover:underline">Voltar para a loja</Link>
-    </div>
-  ),
-  errorComponent: ({ error }) => (
-    <div className="container mx-auto py-32 text-center">
-      <p className="text-muted-foreground">{error.message}</p>
+      <Link to="/loja" search={{ category: undefined, search: undefined }} className="text-primary hover:underline">Voltar para a loja</Link>
     </div>
   ),
   component: ProductPage,
 });
 
 function ProductPage() {
-  const { id } = Route.useLoaderData() as { id: string };
-  const { products } = useAdminStore();
-  const product = products.find(p => p.id === id);
+  const { id } = Route.useLoaderData();
   const queryClient = useQueryClient();
-
-  if (!product) throw notFound();
-
+  const { data: product, isLoading } = useProduct(id);
+  const { data: allProducts = [] } = useProducts();
   const { add } = useCart();
+
   const [activeImg, setActiveImg] = useState(0);
-  const [color, setColor] = useState(product.colors[0]?.name);
+  const [color, setColor] = useState<string | undefined>(undefined);
   const [qty, setQty] = useState(1);
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState("");
@@ -119,30 +61,20 @@ function ProductPage() {
         .select("*, profiles(username, full_name, avatar_url)")
         .eq("product_id", id)
         .order("created_at", { ascending: false });
-
       if (error) throw error;
       return data;
     },
   });
 
-  const ratingStats = reviews.length > 0
-    ? {
-        average: (reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / reviews.length).toFixed(1),
-        count: reviews.length
-      }
-    : { average: product.rating.toString(), count: product.reviews };
-
   const mutation = useMutation({
     mutationFn: async () => {
       if (!session) throw new Error("Você precisa estar logado para avaliar.");
-      
       const { error } = await supabase.from("reviews").upsert({
         product_id: id,
         user_id: session.user.id,
         rating: newRating,
         comment: newComment,
       });
-
       if (error) throw error;
     },
     onSuccess: () => {
@@ -151,19 +83,34 @@ function ProductPage() {
       setNewComment("");
     },
     onError: (error: any) => {
-      if (error.code === "23505") {
-        toast.error("Você já avaliou este produto.");
-      } else {
-        toast.error(error.message || "Erro ao enviar avaliação.");
-      }
+      toast.error(error.code === "23505" ? "Você já avaliou este produto." : error.message || "Erro ao enviar avaliação.");
     },
   });
 
-  const related = products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
+  if (isLoading) {
+    return (
+      <div className="container mx-auto py-32 flex justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!product) throw notFound();
+
+  const selectedColor = color ?? product.colors[0]?.name;
+  const gallery = product.gallery.length > 0 ? product.gallery : [product.image_url ?? "/products/product-1.jpg"];
+  const related = allProducts.filter((p) => p.id !== product.id && p.category === product.category).slice(0, 4);
+
+  const ratingStats = reviews.length > 0
+    ? {
+        average: (reviews.reduce((acc: number, r: any) => acc + r.rating, 0) / reviews.length).toFixed(1),
+        count: reviews.length,
+      }
+    : { average: "0", count: 0 };
 
   return (
     <div className="container mx-auto px-4 lg:px-8 py-10 lg:py-16">
-      <Link to="/loja" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-8">
+      <Link to="/loja" search={{ category: undefined, search: undefined }} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-8">
         <ArrowLeft className="h-4 w-4" /> Voltar para a loja
       </Link>
 
@@ -172,20 +119,22 @@ function ProductPage() {
         <div className="space-y-4">
           <div className="relative aspect-square rounded-xl overflow-hidden border border-border bg-card">
             <div className="absolute inset-0 bg-primary/20 blur-3xl -z-10" />
-            <img src={product.gallery[activeImg]} alt={`Peça impressa em 3D: ${product.name}`} className="h-full w-full object-cover" />
+            <img src={gallery[activeImg]} alt={`Peça impressa em 3D: ${product.name}`} className="h-full w-full object-cover" />
           </div>
-          <div className="grid grid-cols-4 gap-3">
-            {product.gallery.map((g, i) => (
-              <button
-                key={i}
-                onClick={() => setActiveImg(i)}
-                aria-label={`Ver imagem ${i + 1} de ${product.name}`}
-                className={`aspect-square rounded-md overflow-hidden border-2 transition-colors ${activeImg === i ? "border-primary" : "border-border hover:border-muted-foreground"}`}
-              >
-                <img src={g} alt={`Peça impressa em 3D: ${product.name} — imagem ${i + 1}`} className="h-full w-full object-cover" />
-              </button>
-            ))}
-          </div>
+          {gallery.length > 1 && (
+            <div className="grid grid-cols-4 gap-3">
+              {gallery.map((g, i) => (
+                <button
+                  key={i}
+                  onClick={() => setActiveImg(i)}
+                  aria-label={`Ver imagem ${i + 1}`}
+                  className={`aspect-square rounded-md overflow-hidden border-2 transition-colors ${activeImg === i ? "border-primary" : "border-border hover:border-muted-foreground"}`}
+                >
+                  <img src={g} alt={`${product.name} imagem ${i + 1}`} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* INFO */}
@@ -200,37 +149,50 @@ function ProductPage() {
           </div>
 
           <p className="text-4xl font-black text-gradient">{formatBRL(product.price)}</p>
-
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
 
-          <div className="space-y-3">
-            <p className="text-xs tracking-[0.2em] font-bold text-muted-foreground">COR / MATERIAL</p>
-            <div className="flex flex-wrap gap-2">
-              {product.colors.map((c) => (
-                <button
-                  key={c.name}
-                  onClick={() => setColor(c.name)}
-                  className={`flex items-center gap-2 pl-2 pr-4 py-2 rounded-full border transition-colors ${color === c.name ? "border-primary bg-primary/10" : "border-border hover:border-primary"}`}
-                >
-                  <span className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: c.hex }} />
-                  <span className="text-xs font-medium">{c.name}</span>
-                </button>
-              ))}
+          {product.colors.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs tracking-[0.2em] font-bold text-muted-foreground">COR / MATERIAL</p>
+              <div className="flex flex-wrap gap-2">
+                {product.colors.map((c) => (
+                  <button
+                    key={c.name}
+                    onClick={() => setColor(c.name)}
+                    className={`flex items-center gap-2 pl-2 pr-4 py-2 rounded-full border transition-colors ${selectedColor === c.name ? "border-primary bg-primary/10" : "border-border hover:border-primary"}`}
+                  >
+                    <span className="h-5 w-5 rounded-full border border-border" style={{ backgroundColor: c.hex }} />
+                    <span className="text-xs font-medium">{c.name}</span>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="flex items-center gap-4 pt-2">
-            <div className="flex items-center border border-border rounded-md h-12">
-              <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Diminuir quantidade" className="h-12 w-12 grid place-items-center hover:bg-secondary"><Minus className="h-4 w-4" /></button>
-              <span className="w-12 text-center font-bold">{qty}</span>
-              <button onClick={() => setQty((q) => q + 1)} aria-label="Aumentar quantidade" className="h-12 w-12 grid place-items-center hover:bg-secondary"><Plus className="h-4 w-4" /></button>
+          <div className="space-y-3">
+            {product.stock > 0 ? (
+              <p className="text-sm text-green-500 font-medium">{product.stock} em estoque</p>
+            ) : (
+              <p className="text-sm text-red-500 font-medium">Fora de estoque</p>
+            )}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center border border-border rounded-md h-12">
+                <button onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label="Diminuir quantidade" className="h-12 w-12 grid place-items-center hover:bg-secondary">
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="w-12 text-center font-bold">{qty}</span>
+                <button onClick={() => setQty((q) => Math.min(product.stock || 99, q + 1))} aria-label="Aumentar quantidade" className="h-12 w-12 grid place-items-center hover:bg-secondary">
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+              <button
+                onClick={() => add(product, qty, selectedColor)}
+                disabled={product.stock === 0}
+                className="flex-1 h-12 rounded-md bg-primary text-primary-foreground font-bold tracking-wide hover:opacity-90 glow-purple disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                ADICIONAR AO CARRINHO
+              </button>
             </div>
-            <button
-              onClick={() => add(product, qty, color)}
-              className="flex-1 h-12 rounded-md bg-primary text-primary-foreground font-bold tracking-wide hover:opacity-90 glow-purple"
-            >
-              ADICIONAR AO CARRINHO
-            </button>
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-4">
@@ -246,21 +208,23 @@ function ProductPage() {
             ))}
           </div>
 
-          <div className="pt-6 border-t border-border">
-            <p className="text-xs tracking-[0.2em] font-bold text-muted-foreground mb-4">ESPECIFICAÇÕES TÉCNICAS</p>
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {product.specs.map((s) => (
-                <div key={s.label} className="flex justify-between py-2 border-b border-border/60">
-                  <dt className="text-sm text-muted-foreground">{s.label}</dt>
-                  <dd className="text-sm font-medium">{s.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+          {product.specs.length > 0 && (
+            <div className="pt-6 border-t border-border">
+              <p className="text-xs tracking-[0.2em] font-bold text-muted-foreground mb-4">ESPECIFICAÇÕES TÉCNICAS</p>
+              <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {product.specs.map((s) => (
+                  <div key={s.label} className="flex justify-between py-2 border-b border-border/60">
+                    <dt className="text-sm text-muted-foreground">{s.label}</dt>
+                    <dd className="text-sm font-medium">{s.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* SEÇÃO DE AVALIAÇÕES */}
+      {/* AVALIAÇÕES */}
       <section className="mt-24 border-t border-border pt-16">
         <div className="grid lg:grid-cols-3 gap-12">
           <div className="space-y-6">
@@ -295,16 +259,14 @@ function ProductPage() {
             ) : (
               <div className="p-6 rounded-xl border border-border bg-card/40 text-center space-y-3">
                 <p className="text-sm text-muted-foreground">Você precisa estar logado para avaliar.</p>
-                <Link to="/login" className="text-primary font-bold hover:underline">Fazer Login →</Link>
+                <Link to="/auth/login" className="text-primary font-bold hover:underline">Fazer Login →</Link>
               </div>
             )}
           </div>
 
           <div className="lg:col-span-2 space-y-8">
             {isLoadingReviews ? (
-              <div className="flex justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
+              <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
             ) : reviews.length > 0 ? (
               <div className="grid gap-6">
                 {reviews.map((r: any) => (
@@ -316,7 +278,7 @@ function ProductPage() {
                             <img src={r.profiles.avatar_url} alt="" className="h-full w-full object-cover" />
                           ) : (
                             <div className="h-full w-full flex items-center justify-center text-[10px] font-bold">
-                              {r.profiles?.full_name?.charAt(0) || r.profiles?.username?.charAt(0) || "U"}
+                              {r.profiles?.full_name?.charAt(0) || "U"}
                             </div>
                           )}
                         </div>

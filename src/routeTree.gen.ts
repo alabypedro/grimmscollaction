@@ -11,16 +11,21 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as PedidoConfirmadoRouteImport } from './routes/pedido-confirmado'
 import { Route as LojaRouteImport } from './routes/loja'
 import { Route as ContatoRouteImport } from './routes/contato'
+import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CategoriasRouteImport } from './routes/categorias'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as AuthRecoveryRouteImport } from './routes/auth.recovery'
 import { Route as AuthPerfilRouteImport } from './routes/auth.perfil'
+import { Route as AuthPedidosRouteImport } from './routes/auth.pedidos'
 import { Route as AuthLoginRouteImport } from './routes/auth.login'
 import { Route as AuthCadastroRouteImport } from './routes/auth.cadastro'
+import { Route as ApiMercadopagoWebhookRouteImport } from './routes/api/mercadopago/webhook'
+import { Route as ApiMercadopagoPreferenceRouteImport } from './routes/api/mercadopago/preference'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -35,6 +40,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PedidoConfirmadoRoute = PedidoConfirmadoRouteImport.update({
+  id: '/pedido-confirmado',
+  path: '/pedido-confirmado',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LojaRoute = LojaRouteImport.update({
   id: '/loja',
   path: '/loja',
@@ -43,6 +53,11 @@ const LojaRoute = LojaRouteImport.update({
 const ContatoRoute = ContatoRouteImport.update({
   id: '/contato',
   path: '/contato',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutRoute = CheckoutRouteImport.update({
+  id: '/checkout',
+  path: '/checkout',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategoriasRoute = CategoriasRouteImport.update({
@@ -75,6 +90,11 @@ const AuthPerfilRoute = AuthPerfilRouteImport.update({
   path: '/auth/perfil',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthPedidosRoute = AuthPedidosRouteImport.update({
+  id: '/auth/pedidos',
+  path: '/auth/pedidos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
@@ -85,6 +105,17 @@ const AuthCadastroRoute = AuthCadastroRouteImport.update({
   path: '/auth/cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMercadopagoWebhookRoute = ApiMercadopagoWebhookRouteImport.update({
+  id: '/api/mercadopago/webhook',
+  path: '/api/mercadopago/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiMercadopagoPreferenceRoute =
+  ApiMercadopagoPreferenceRouteImport.update({
+    id: '/api/mercadopago/preference',
+    path: '/api/mercadopago/preference',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -106,15 +137,20 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/categorias': typeof CategoriasRoute
+  '/checkout': typeof CheckoutRoute
   '/contato': typeof ContatoRoute
   '/loja': typeof LojaRoute
+  '/pedido-confirmado': typeof PedidoConfirmadoRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/auth/cadastro': typeof AuthCadastroRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/pedidos': typeof AuthPedidosRoute
   '/auth/perfil': typeof AuthPerfilRoute
   '/auth/recovery': typeof AuthRecoveryRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/api/mercadopago/preference': typeof ApiMercadopagoPreferenceRoute
+  '/api/mercadopago/webhook': typeof ApiMercadopagoWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -123,15 +159,20 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/categorias': typeof CategoriasRoute
+  '/checkout': typeof CheckoutRoute
   '/contato': typeof ContatoRoute
   '/loja': typeof LojaRoute
+  '/pedido-confirmado': typeof PedidoConfirmadoRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/auth/cadastro': typeof AuthCadastroRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/pedidos': typeof AuthPedidosRoute
   '/auth/perfil': typeof AuthPerfilRoute
   '/auth/recovery': typeof AuthRecoveryRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/api/mercadopago/preference': typeof ApiMercadopagoPreferenceRoute
+  '/api/mercadopago/webhook': typeof ApiMercadopagoWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -141,15 +182,20 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/categorias': typeof CategoriasRoute
+  '/checkout': typeof CheckoutRoute
   '/contato': typeof ContatoRoute
   '/loja': typeof LojaRoute
+  '/pedido-confirmado': typeof PedidoConfirmadoRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/sobre': typeof SobreRoute
   '/auth/cadastro': typeof AuthCadastroRoute
   '/auth/login': typeof AuthLoginRoute
+  '/auth/pedidos': typeof AuthPedidosRoute
   '/auth/perfil': typeof AuthPerfilRoute
   '/auth/recovery': typeof AuthRecoveryRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/api/mercadopago/preference': typeof ApiMercadopagoPreferenceRoute
+  '/api/mercadopago/webhook': typeof ApiMercadopagoWebhookRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -160,15 +206,20 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/categorias'
+    | '/checkout'
     | '/contato'
     | '/loja'
+    | '/pedido-confirmado'
     | '/sitemap.xml'
     | '/sobre'
     | '/auth/cadastro'
     | '/auth/login'
+    | '/auth/pedidos'
     | '/auth/perfil'
     | '/auth/recovery'
     | '/produto/$id'
+    | '/api/mercadopago/preference'
+    | '/api/mercadopago/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -177,15 +228,20 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/categorias'
+    | '/checkout'
     | '/contato'
     | '/loja'
+    | '/pedido-confirmado'
     | '/sitemap.xml'
     | '/sobre'
     | '/auth/cadastro'
     | '/auth/login'
+    | '/auth/pedidos'
     | '/auth/perfil'
     | '/auth/recovery'
     | '/produto/$id'
+    | '/api/mercadopago/preference'
+    | '/api/mercadopago/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -194,15 +250,20 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/categorias'
+    | '/checkout'
     | '/contato'
     | '/loja'
+    | '/pedido-confirmado'
     | '/sitemap.xml'
     | '/sobre'
     | '/auth/cadastro'
     | '/auth/login'
+    | '/auth/pedidos'
     | '/auth/perfil'
     | '/auth/recovery'
     | '/produto/$id'
+    | '/api/mercadopago/preference'
+    | '/api/mercadopago/webhook'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -212,15 +273,20 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
   CategoriasRoute: typeof CategoriasRoute
+  CheckoutRoute: typeof CheckoutRoute
   ContatoRoute: typeof ContatoRoute
   LojaRoute: typeof LojaRoute
+  PedidoConfirmadoRoute: typeof PedidoConfirmadoRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   SobreRoute: typeof SobreRoute
   AuthCadastroRoute: typeof AuthCadastroRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  AuthPedidosRoute: typeof AuthPedidosRoute
   AuthPerfilRoute: typeof AuthPerfilRoute
   AuthRecoveryRoute: typeof AuthRecoveryRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
+  ApiMercadopagoPreferenceRoute: typeof ApiMercadopagoPreferenceRoute
+  ApiMercadopagoWebhookRoute: typeof ApiMercadopagoWebhookRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -242,6 +308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pedido-confirmado': {
+      id: '/pedido-confirmado'
+      path: '/pedido-confirmado'
+      fullPath: '/pedido-confirmado'
+      preLoaderRoute: typeof PedidoConfirmadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/loja': {
       id: '/loja'
       path: '/loja'
@@ -254,6 +327,13 @@ declare module '@tanstack/react-router' {
       path: '/contato'
       fullPath: '/contato'
       preLoaderRoute: typeof ContatoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout': {
+      id: '/checkout'
+      path: '/checkout'
+      fullPath: '/checkout'
+      preLoaderRoute: typeof CheckoutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/categorias': {
@@ -298,6 +378,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthPerfilRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/pedidos': {
+      id: '/auth/pedidos'
+      path: '/auth/pedidos'
+      fullPath: '/auth/pedidos'
+      preLoaderRoute: typeof AuthPedidosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/login': {
       id: '/auth/login'
       path: '/auth/login'
@@ -310,6 +397,20 @@ declare module '@tanstack/react-router' {
       path: '/auth/cadastro'
       fullPath: '/auth/cadastro'
       preLoaderRoute: typeof AuthCadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mercadopago/webhook': {
+      id: '/api/mercadopago/webhook'
+      path: '/api/mercadopago/webhook'
+      fullPath: '/api/mercadopago/webhook'
+      preLoaderRoute: typeof ApiMercadopagoWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/mercadopago/preference': {
+      id: '/api/mercadopago/preference'
+      path: '/api/mercadopago/preference'
+      fullPath: '/api/mercadopago/preference'
+      preLoaderRoute: typeof ApiMercadopagoPreferenceRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lovable/email/queue/process': {
@@ -340,15 +441,20 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   CategoriasRoute: CategoriasRoute,
+  CheckoutRoute: CheckoutRoute,
   ContatoRoute: ContatoRoute,
   LojaRoute: LojaRoute,
+  PedidoConfirmadoRoute: PedidoConfirmadoRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   SobreRoute: SobreRoute,
   AuthCadastroRoute: AuthCadastroRoute,
   AuthLoginRoute: AuthLoginRoute,
+  AuthPedidosRoute: AuthPedidosRoute,
   AuthPerfilRoute: AuthPerfilRoute,
   AuthRecoveryRoute: AuthRecoveryRoute,
   ProdutoIdRoute: ProdutoIdRoute,
+  ApiMercadopagoPreferenceRoute: ApiMercadopagoPreferenceRoute,
+  ApiMercadopagoWebhookRoute: ApiMercadopagoWebhookRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,

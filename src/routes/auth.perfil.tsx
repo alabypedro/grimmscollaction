@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User, Camera, Save, LogOut, Loader2, Mail, Lock } from "lucide-react";
+import { User, Camera, Save, LogOut, Loader2, Mail, Lock, Package } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/auth/perfil")({
   component: PerfilPage,
@@ -224,9 +225,14 @@ function PerfilPage() {
               <h1 className="text-2xl font-black">Meu Perfil</h1>
               <p className="text-sm text-muted-foreground">Gerencie suas informações</p>
             </div>
-            <Button variant="ghost" size="icon" aria-label="Sair da conta" onClick={handleLogout} className="text-muted-foreground hover:text-destructive transition-colors mt-1">
-              <LogOut className="h-5 w-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Link to="/auth/pedidos" className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border text-sm text-muted-foreground hover:text-primary hover:border-primary transition-colors">
+                <Package className="h-4 w-4" /> Meus Pedidos
+              </Link>
+              <Button variant="ghost" size="icon" aria-label="Sair da conta" onClick={handleLogout} className="text-muted-foreground hover:text-destructive transition-colors">
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
 

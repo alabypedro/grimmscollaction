@@ -1,9 +1,10 @@
 import { X, Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { useCart, formatBRL } from "@/lib/cart";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 export function CartDrawer() {
   const { items, open, setOpen, remove, updateQty, total, count } = useCart();
+  const navigate = useNavigate();
 
   return (
     <>
@@ -48,7 +49,7 @@ export function CartDrawer() {
                     onClick={() => setOpen(false)}
                     className="shrink-0"
                   >
-                    <img src={it.product.image} alt={it.product.name} className="h-20 w-20 object-cover rounded-md border border-border" />
+                    <img src={it.product.image_url ?? "/products/product-1.jpg"} alt={it.product.name} className="h-20 w-20 object-cover rounded-md border border-border" />
                   </Link>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{it.product.name}</p>
@@ -77,7 +78,10 @@ export function CartDrawer() {
               <span className="text-muted-foreground">Subtotal</span>
               <span className="font-bold text-lg">{formatBRL(total)}</span>
             </div>
-            <button className="w-full h-12 rounded-md bg-primary text-primary-foreground font-bold tracking-wide hover:opacity-90 glow-purple transition-all">
+            <button
+              onClick={() => { setOpen(false); navigate({ to: "/checkout" }); }}
+              className="w-full h-12 rounded-md bg-primary text-primary-foreground font-bold tracking-wide hover:opacity-90 glow-purple transition-all"
+            >
               FINALIZAR COMPRA
             </button>
           </div>

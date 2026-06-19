@@ -1,17 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { SlidersHorizontal } from "lucide-react";
-import { CATEGORIES, MATERIALS, type Category, type Material } from "@/lib/products";
-import { useAdminStore } from "@/lib/admin-store";
+import { SlidersHorizontal, Loader2 } from "lucide-react";
+import { MATERIALS, type Material } from "@/lib/products";
+import { useProducts } from "@/lib/use-products";
 import { ProductCard } from "@/components/ProductCard";
 
 export const Route = createFileRoute("/loja")({
-  validateSearch: (search: Record<string, unknown>) => {
-    return {
-      category: (search.category as string) || undefined,
-      search: (search.search as string) || undefined,
-    };
-  },
+  validateSearch: (search: Record<string, unknown>) => ({
+    category: (search.category as string) || undefined,
+    search: (search.search as string) || undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Loja — Grimm's Collection" },
@@ -20,15 +18,13 @@ export const Route = createFileRoute("/loja")({
       { property: "og:description", content: "Catálogo completo de impressão 3D premium." },
       { property: "og:url", content: "https://grimmscollaction.lovable.app/loja" },
     ],
-    links: [
-      { rel: "canonical", href: "https://grimmscollaction.lovable.app/loja" },
-    ],
+    links: [{ rel: "canonical", href: "https://grimmscollaction.lovable.app/loja" }],
   }),
   component: LojaPage,
 });
 
 function LojaPage() {
-  const { products, categories: dynamicCategories } = useAdminStore();
+  const { data: products = [], isLoading } = useProducts();
   const navigate = Route.useNavigate();
   const search = Route.useSearch();
   const [cat, setCat] = useState<string>(search.category || "Todas");
@@ -36,24 +32,19 @@ function LojaPage() {
   const [maxPrice, setMaxPrice] = useState(1000);
   const [sort, setSort] = useState<"popular" | "price-asc" | "price-desc">("popular");
 
+  const categories = ["Todas", ...new Set(products.map((p) => p.category))];
+
   const filtered = useMemo(() => {
     let list = products.filter((p) => {
       if (cat !== "Todas" && p.category !== cat) return false;
       if (mat !== "Todos" && p.material !== mat) return false;
       if (p.price > maxPrice) return false;
-      
-      // Filtro de pesquisa
       if (search.search) {
-        const searchTerm = search.search.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const nameNormalized = p.name.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        const categoryNormalized = p.category.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        
-        const matchesName = nameNormalized.includes(searchTerm);
-        const matchesCategory = categoryNormalized.includes(searchTerm);
-        
-        if (!matchesName && !matchesCategory) return false;
+        const term = search.search.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+        const name = p.name.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+        const category = p.category.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+        if (!name.includes(term) && !category.includes(term)) return false;
       }
-      
       return true;
     });
     if (sort === "popular") list = [...list].sort((a, b) => b.popularity - a.popularity);
@@ -70,14 +61,13 @@ function LojaPage() {
           {search.search ? `Resultados para "${search.search}"` : "Loja"}
         </h1>
         <p className="text-muted-foreground mt-2">
-          {search.search 
-            ? `Encontramos ${filtered.length} produto${filtered.length !== 1 ? "s" : ""} para sua busca.` 
+          {search.search
+            ? `Encontramos ${filtered.length} produto${filtered.length !== 1 ? "s" : ""} para sua busca.`
             : "Todos os drops, edições limitadas e clássicos."}
         </p>
       </div>
 
       <div className="grid lg:grid-cols-[260px_1fr] gap-10">
-        {/* FILTROS */}
         <aside className="space-y-8 lg:sticky lg:top-24 self-start">
           <h2 className="sr-only">Filtros</h2>
           <div className="flex items-center gap-2 pb-3 border-b border-border">
@@ -86,7 +76,7 @@ function LojaPage() {
           </div>
 
           <FilterGroup title="Categoria">
-            {(["Todas", ...dynamicCategories] as const).map((c) => (
+            {categories.map((c) => (
               <FilterButton key={c} active={cat === c} onClick={() => setCat(c)}>{c}</FilterButton>
             ))}
           </FilterGroup>
@@ -129,23 +119,24 @@ function LojaPage() {
           </FilterGroup>
         </aside>
 
-        {/* GRID */}
         <div>
           <div className="flex items-center justify-between mb-6">
             <h2 className="sr-only">Produtos encontrados</h2>
             <p className="text-sm text-muted-foreground">{filtered.length} produto{filtered.length !== 1 && "s"}</p>
             {search.search && (
-              <button 
-                onClick={() => navigate({ to: "/loja", search: { category: cat } })}
-                className="text-xs font-bold text-primary hover:underline"
-              >
+              <button onClick={() => navigate({ to: "/loja", search: { category: undefined, search: undefined } })} className="text-xs font-bold text-primary hover:underline">
                 LIMPAR PESQUISA
               </button>
             )}
           </div>
-          {filtered.length === 0 ? (
+
+          {isLoading ? (
+            <div className="flex justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="text-center py-20 border border-dashed border-border rounded-lg">
-              <p className="text-muted-foreground">Nenhum produto encontrado para "{search.search}".</p>
+              <p className="text-muted-foreground">Nenhum produto encontrado{search.search ? ` para "${search.search}"` : ""}.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">

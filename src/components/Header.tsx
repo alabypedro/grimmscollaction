@@ -83,7 +83,7 @@ export function Header() {
     if (searchValue.trim()) {
       navigate({
         to: "/loja",
-        search: { search: searchValue.trim() },
+        search: { search: searchValue.trim(), category: undefined },
       });
       setSearchOpen(false);
       setSearchValue("");

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone *)",
+      "PowerShell(git clone *)",
+      "Bash(xargs basename -a)",
+      "PowerShell(New-Item *)"
+    ]
+  }
+}
