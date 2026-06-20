@@ -131,6 +131,191 @@ export type Database = {
         }
         Relationships: []
       }
+      order_items: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string
+          product_image: string | null
+          product_name: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id: string
+          product_image?: string | null
+          product_name: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string
+          product_image?: string | null
+          product_name?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          id: string
+          mp_payment_id: string | null
+          mp_preference_id: string | null
+          notes: string | null
+          payment_method: string
+          shipping_address: string
+          shipping_cep: string
+          shipping_city: string
+          shipping_complement: string | null
+          shipping_cost: number
+          shipping_deadline: string | null
+          shipping_name: string
+          shipping_neighborhood: string | null
+          shipping_number: string | null
+          shipping_service: string | null
+          shipping_state: string
+          status: string
+          subtotal: number
+          total: number
+          tracking_code: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          notes?: string | null
+          payment_method?: string
+          shipping_address: string
+          shipping_cep: string
+          shipping_city: string
+          shipping_complement?: string | null
+          shipping_cost?: number
+          shipping_deadline?: string | null
+          shipping_name: string
+          shipping_neighborhood?: string | null
+          shipping_number?: string | null
+          shipping_service?: string | null
+          shipping_state: string
+          status?: string
+          subtotal: number
+          total: number
+          tracking_code?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mp_payment_id?: string | null
+          mp_preference_id?: string | null
+          notes?: string | null
+          payment_method?: string
+          shipping_address?: string
+          shipping_cep?: string
+          shipping_city?: string
+          shipping_complement?: string | null
+          shipping_cost?: number
+          shipping_deadline?: string | null
+          shipping_name?: string
+          shipping_neighborhood?: string | null
+          shipping_number?: string | null
+          shipping_service?: string | null
+          shipping_state?: string
+          status?: string
+          subtotal?: number
+          total?: number
+          tracking_code?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          active: boolean
+          category: string
+          colors: Json | null
+          created_at: string
+          description: string | null
+          featured: boolean
+          gallery: string[] | null
+          hero: boolean
+          id: string
+          image_url: string | null
+          material: string
+          name: string
+          popularity: number
+          price: number
+          specs: Json | null
+          stock: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          colors?: Json | null
+          created_at?: string
+          description?: string | null
+          featured?: boolean
+          gallery?: string[] | null
+          hero?: boolean
+          id: string
+          image_url?: string | null
+          material: string
+          name: string
+          popularity?: number
+          price: number
+          specs?: Json | null
+          stock?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          colors?: Json | null
+          created_at?: string
+          description?: string | null
+          featured?: boolean
+          gallery?: string[] | null
+          hero?: boolean
+          id?: string
+          image_url?: string | null
+          material?: string
+          name?: string
+          popularity?: number
+          price?: number
+          specs?: Json | null
+          stock?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -260,6 +445,10 @@ export type Database = {
       }
       set_admin_by_email: {
         Args: { admin_status: boolean; user_email: string }
+        Returns: undefined
+      }
+      update_order_status: {
+        Args: { new_status: string; new_tracking?: string; order_id: string }
         Returns: undefined
       }
     }
